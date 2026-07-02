@@ -8,11 +8,14 @@ const PORT = process.env.PORT || 3000;
 
 const ICS_URL = 'https://p154-caldav.icloud.com/published/2/MTAyNzgxMzE5NjEwMjc4MeQpRiWg8s91ZttUzCscn0LVukQGO_XhrS79WurbTSRN';
 
-// News RSS feeds - all confirmed working
+// News RSS feeds - confirmed working, 6 categories
 const NEWS_FEEDS = [
-  { url: 'https://www.autocar.co.uk/rss',           label: 'Auto',    color: '#0071e3' },
-  { url: 'https://www.motor1.com/rss/news/all/',     label: 'Auto',    color: '#0071e3' },
-  { url: 'https://www.electrive.com/feed/',          label: 'EV',      color: '#34c759' },
+  { url: 'https://www.autocar.co.uk/rss',            label: 'Auto',      color: '#0071e3' },
+  { url: 'https://www.motor1.com/rss/news/all/',      label: 'Auto',      color: '#0071e3' },
+  { url: 'https://www.electrive.com/feed/',           label: 'EV',        color: '#34c759' },
+  { url: 'https://www.moneyweb.co.za/feed/',          label: 'SA Biz',    color: '#ff9f0a' },
+  { url: 'https://www.crash.net/rss/f1',              label: 'F1',        color: '#ff3b30' },
+  { url: 'https://robbreport.com/feed/',              label: 'Luxury',    color: '#af52de' },
 ];
 
 // Cache
@@ -77,8 +80,8 @@ async function fetchNews() {
     }
   }
 
-  // Shuffle so it's not always same source first, cap at 8
-  const shuffled = allItems.sort(() => Math.random() - 0.5).slice(0, 8);
+  // Shuffle so it's not always same source first, cap at 12
+  const shuffled = allItems.sort(() => Math.random() - 0.5).slice(0, 12);
   newsCache = { data: shuffled, fetched: now };
   return shuffled;
 }
