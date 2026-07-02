@@ -18,9 +18,14 @@ const NEWS_FEEDS = [
   { url: 'https://robbreport.com/feed/',              label: 'Luxury',    color: '#af52de' },
 ];
 
+// Supabase config
+const SUPABASE_URL  = 'https://xpfwfdfivehigppdmhnx.supabase.co/rest/v1';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwZndmZGZpdmVoaWdwcGRtaG54Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTA1MjQwNCwiZXhwIjoyMDk2NjI4NDA0fQ.M0rlC_N6RjISw8q5v0Ygp7q_go_Pbhyaj6tTPxzLzIk';
+
 // Cache
-let calCache  = { data: null, fetched: 0 };
-let newsCache = { data: null, fetched: 0 };
+let calCache       = { data: null, fetched: 0 };
+let newsCache      = { data: null, fetched: 0 };
+let supabaseCache  = { data: null, fetched: 0 };
 
 // ── Fetch a URL ──────────────────────────────────────
 function fetchURL(targetUrl) {
@@ -86,6 +91,69 @@ async function fetchNews() {
   return shuffled;
 }
 
+// ── Fetch Supabase stats ─────────────────────────────
+function fetchSupabase(path) {
+  return new Promise((resolve, reject) => {
+    const fullUrl = SUPABASE_URL + path;
+    const opts = {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'count=exact'
+      }
+    };
+    const req = https.get(fullUrl, opts, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          resolve({ json: JSON.parse(data), range: res.headers['content-range'] || '' });
+        } catch(e) {
+          resolve({ json: [], range: '' });
+        }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+
+function parseCount(range) {
+  // content-range: 0-999/1023  → 1023
+  const m = range.match(/\/(\d+)$/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+async function fetchSupabaseStats() {
+  const now = Date.now();
+  if (supabaseCache.data && now - supabaseCache.fetched < 10 * 60 * 1000) return supabaseCache.data;
+
+  try {
+    const [cust, veh, svc, pros, brands] = await Promise.all([
+      fetchSupabase('/customers?select=id&limit=1'),
+      fetchSupabase('/vehicles?select=id&limit=1'),
+      fetchSupabase('/service_events?select=id&limit=1'),
+      fetchSupabase('/prospects?select=id&limit=1'),
+      fetchSupabase('/brand_summary?select=brand,vehicles,customers,total_events,services,sales'),
+    ]);
+
+    const stats = {
+      customers:      parseCount(cust.range),
+      vehicles:       parseCount(veh.range),
+      service_events: parseCount(svc.range),
+      prospects:      parseCount(pros.range),
+      brands:         brands.json.filter(b => b.vehicles > 0),
+      fetched_at:     new Date().toISOString(),
+    };
+
+    supabaseCache = { data: stats, fetched: now };
+    return stats;
+  } catch(e) {
+    console.log('Supabase stats error:', e.message);
+    return null;
+  }
+}
+
 // ── HTTP Server ──────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url);
@@ -117,6 +185,18 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(items));
     } catch(e) {
       res.writeHead(500); res.end('[]');
+    }
+    return;
+  }
+
+  // ── /supabase-stats ──
+  if (parsed.pathname === '/supabase-stats') {
+    try {
+      const stats = await fetchSupabaseStats();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(stats || {}));
+    } catch(e) {
+      res.writeHead(500); res.end('{}');
     }
     return;
   }

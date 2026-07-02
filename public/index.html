@@ -291,6 +291,17 @@
 
     /* WEATHER FORECAST */
     .forecast-card { grid-column: span 4; }
+    .crm-card { grid-column: span 5; }
+    .crm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .crm-stat { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+    .crm-stat-val { font-size: 22px; font-weight: 600; color: var(--text-primary); line-height: 1; }
+    .crm-stat-label { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
+    .crm-brands { display: flex; flex-direction: column; gap: 6px; }
+    .crm-brand-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .crm-brand-name { width: 90px; color: var(--text-secondary); flex-shrink: 0; }
+    .crm-brand-bar { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .crm-brand-fill { height: 100%; border-radius: 3px; }
+    .crm-brand-count { font-size: 11px; color: var(--text-tertiary); min-width: 28px; text-align: right; }
     .forecast-row {
       display: flex;
       justify-content: space-between;
@@ -356,13 +367,13 @@
     /* RESPONSIVE */
     @media (max-width: 900px) {
       body { padding: 16px; }
-      .weather-card, .forecast-card, .family-card { grid-column: span 6; }
+      .weather-card, .forecast-card, .crm-card, .family-card { grid-column: span 6; }
       .calendar-card, .tasks-card { grid-column: span 6; }
       .news-card, .ventures-card { grid-column: span 12; }
     }
     @media (max-width: 600px) {
       .header { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .weather-card, .forecast-card, .family-card,
+      .weather-card, .forecast-card, .crm-card, .family-card,
       .calendar-card, .tasks-card,
       .news-card, .ventures-card { grid-column: span 12; }
     }
@@ -456,6 +467,19 @@
   <div class="card forecast-card">
     <div class="card-label">🌤 5-Day Forecast — JHB</div>
     <div class="forecast-row" id="forecastRow"><span class="spinner"></span></div>
+  </div>
+
+  <!-- CRM SNAPSHOT -->
+  <div class="card crm-card">
+    <div class="card-label">📊 CRM Snapshot</div>
+    <div class="crm-stats" id="crmStats">
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Customers</div></div>
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Vehicles</div></div>
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Service Events</div></div>
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Prospects</div></div>
+    </div>
+    <div class="card-label" style="font-size:10px; margin-bottom:8px; margin-top:4px;">BY BRAND</div>
+    <div class="crm-brands" id="crmBrands"><span class="spinner"></span></div>
   </div>
 
   <!-- FAMILY -->
@@ -682,6 +706,46 @@ function renderVentures() {
   `).join('');
 }
 renderVentures();
+
+// ── CRM SNAPSHOT ───────────────────────────────────────
+const brandColors = {
+  'Aston Martin': '#008542',
+  'McLaren':      '#ff8000',
+  'Rolls-Royce':  '#9a7b4f',
+  'Bentley':      '#1a4480',
+  'Lamborghini':  '#d4a017',
+  'Ferrari':      '#c00',
+  'Porsche':      '#c00',
+  'Bugatti':      '#1a1aff',
+};
+
+async function loadCRMStats() {
+  try {
+    const res = await fetch('/supabase-stats');
+    const data = await res.json();
+    if (!data || !data.customers) return;
+
+    // Fill in the 4 stat boxes
+    const vals = [data.customers, data.vehicles, data.service_events, data.prospects];
+    const boxes = document.querySelectorAll('#crmStats .crm-stat-val');
+    boxes.forEach((el, i) => { el.textContent = vals[i].toLocaleString(); });
+
+    // Brand breakdown
+    const maxVeh = Math.max(...data.brands.map(b => b.vehicles), 1);
+    document.getElementById('crmBrands').innerHTML = data.brands.map(b => {
+      const color = brandColors[b.brand] || '#0071e3';
+      const pct = Math.round((b.vehicles / maxVeh) * 100);
+      return `<div class="crm-brand-row">
+        <div class="crm-brand-name">${b.brand}</div>
+        <div class="crm-brand-bar"><div class="crm-brand-fill" style="width:${pct}%;background:${color};"></div></div>
+        <div class="crm-brand-count">${b.vehicles}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('crmBrands').innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Unavailable</span>';
+  }
+}
+loadCRMStats();
 
 // ── TASKS ─────────────────────────────────────────────
 let tasks = JSON.parse(localStorage.getItem('gd_tasks') || '[]');
