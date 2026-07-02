@@ -26,6 +26,7 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 let calCache       = { data: null, fetched: 0 };
 let newsCache      = { data: null, fetched: 0 };
 let supabaseCache  = { data: null, fetched: 0 };
+let contactsCache  = { data: null, date: '' };
 
 // ── Fetch a URL ──────────────────────────────────────
 function fetchURL(targetUrl) {
@@ -154,6 +155,114 @@ async function fetchSupabaseStats() {
   }
 }
 
+// ── Daily Contacts Engine ────────────────────────────
+function seededRandom(seed) {
+  // Simple deterministic RNG (mulberry32)
+  let s = seed >>> 0;
+  return function() {
+    s = Math.imul(s ^ (s >>> 15), s | 1);
+    s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
+    return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function dateToSeed(dateStr) {
+  // e.g. "2026-07-02" → integer seed
+  return parseInt(dateStr.replace(/-/g,''), 10);
+}
+
+async function fetchDailyContacts() {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Johannesburg' }); // YYYY-MM-DD
+  if (contactsCache.data && contactsCache.date === today) return contactsCache.data;
+
+  try {
+    // 1. Fetch birthday candidates this month + next month
+    const todayDate  = new Date(today);
+    const m1 = todayDate.getMonth() + 1;
+    const m2 = m1 === 12 ? 1 : m1 + 1;
+    const [bdayRaw, poolRaw] = await Promise.all([
+      fetchSupabase(`/birthday_calendar?select=first_name,surname,email,cell,birthdate&month_num=in.(${m1},${m2})&limit=200`),
+      fetchSupabase('/customer_card?select=id,first_name,surname,email,cell,pipeline_stage,last_comm_at,comms_count,notes,tags,status,birthdate&or=(email.not.is.null,cell.not.is.null)&limit=500'),
+    ]);
+
+    const bdays = Array.isArray(bdayRaw.json) ? bdayRaw.json : [];
+    const pool  = Array.isArray(poolRaw.json) ? poolRaw.json : [];
+
+    // Birthday lookup by email
+    const bdayByEmail = {};
+    bdays.forEach(b => {
+      if (b.email) bdayByEmail[b.email.toLowerCase()] = b.birthdate;
+    });
+
+    // Score each customer
+    const todayMD = today.slice(5); // MM-DD
+    const scored = pool.map(c => {
+      let score = 0;
+      let badges = [];
+
+      // Has both email + cell = fully contactable
+      if (c.email && c.cell)      { score += 20; badges.push('✉+📱'); }
+      else if (c.email)           { score += 10; }
+      else if (c.cell)            { score += 10; }
+
+      // Never been contacted
+      if (!c.last_comm_at)        { score += 30; badges.push('🆕 Never contacted'); }
+
+      // Owner / premium pipeline stage
+      if (c.pipeline_stage === 'Owner') { score += 15; badges.push('🚗 Owner'); }
+
+      // Birthday this month
+      const bd = bdayByEmail[c.email ? c.email.toLowerCase() : ''] || c.birthdate;
+      if (bd) {
+        const bdMD = String(bd).slice(5);  // MM-DD
+        const bdM  = bdMD.slice(0,2);
+        if (bdMD === todayMD)              { score += 100; badges.push('🎂 Birthday TODAY'); }
+        else if (bdM === todayMD.slice(0,2)) { score += 60; badges.push('🎂 Birthday this month'); }
+        else if (bdM === String(m2).padStart(2,'0')) { score += 20; badges.push('🎂 Birthday next month'); }
+        c._birthdate = bd;
+      }
+
+      // Stale — last contact > 60 days
+      if (c.last_comm_at) {
+        const daysSince = (Date.now() - new Date(c.last_comm_at)) / 86400000;
+        if (daysSince > 180)       { score += 25; badges.push(`⏰ ${Math.round(daysSince)}d no contact`); }
+        else if (daysSince > 60)   { score += 10; badges.push(`⏰ ${Math.round(daysSince)}d no contact`); }
+      }
+
+      return { ...c, _score: score, _badges: badges };
+    });
+
+    // Sort: score desc, then deterministic shuffle by date seed within same score bucket
+    const rng = seededRandom(dateToSeed(today));
+    scored.sort((a, b) => {
+      if (b._score !== a._score) return b._score - a._score;
+      return rng() - 0.5;
+    });
+
+    // Take top 8, ensure we have name + at least one contact
+    const selected = scored
+      .filter(c => (c.first_name || c.surname))
+      .slice(0, 8)
+      .map((c, i) => ({
+        rank:          i + 1,
+        name:          [c.first_name, c.surname].filter(Boolean).join(' '),
+        email:         c.email || null,
+        cell:          c.cell  || null,
+        pipeline:      c.pipeline_stage || '—',
+        badges:        c._badges,
+        last_contact:  c.last_comm_at ? new Date(c.last_comm_at).toLocaleDateString('en-ZA') : null,
+        birthdate:     c._birthdate || null,
+        notes:         c.notes || null,
+      }));
+
+    contactsCache = { data: { date: today, contacts: selected }, date: today };
+    return contactsCache.data;
+  } catch(e) {
+    console.log('Daily contacts error:', e.message);
+    return null;
+  }
+}
+
 // ── HTTP Server ──────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url);
@@ -185,6 +294,18 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(items));
     } catch(e) {
       res.writeHead(500); res.end('[]');
+    }
+    return;
+  }
+
+  // ── /daily-contacts ──
+  if (parsed.pathname === '/daily-contacts') {
+    try {
+      const data = await fetchDailyContacts();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(data || {}));
+    } catch(e) {
+      res.writeHead(500); res.end('{}');
     }
     return;
   }

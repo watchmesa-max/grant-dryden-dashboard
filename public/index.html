@@ -302,6 +302,40 @@
     .crm-brand-bar { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
     .crm-brand-fill { height: 100%; border-radius: 3px; }
     .crm-brand-count { font-size: 11px; color: var(--text-tertiary); min-width: 28px; text-align: right; }
+
+    /* DAILY 8 */
+    .daily8-card { grid-column: span 12; }
+    .daily8-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .daily8-item {
+      background: var(--bg); border-radius: 12px; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 5px;
+      border-left: 3px solid var(--border); transition: border-color 0.2s;
+      position: relative;
+    }
+    .daily8-item.birthday { border-left-color: #ff9f0a; }
+    .daily8-item.fresh    { border-left-color: #34c759; }
+    .daily8-rank { font-size: 10px; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.05em; }
+    .daily8-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .daily8-contact { font-size: 11px; color: var(--text-secondary); }
+    .daily8-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+    .daily8-badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 20px;
+      background: var(--border); color: var(--text-secondary);
+    }
+    .daily8-done {
+      position: absolute; top: 10px; right: 10px;
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1.5px solid var(--border); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; background: var(--card); color: transparent;
+      transition: all 0.15s;
+    }
+    .daily8-done.checked { background: #34c759; border-color: #34c759; color: #fff; }
+    .daily8-item.done-item { opacity: 0.45; }
+    .daily8-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .daily8-progress { font-size: 11px; color: var(--text-tertiary); }
+    @media (max-width: 900px) { .daily8-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .daily8-grid { grid-template-columns: 1fr 1fr; } }
     .forecast-row {
       display: flex;
       justify-content: space-between;
@@ -406,6 +440,15 @@
     <div class="card-label">✦ Verse of the Day</div>
     <div class="verse-text" id="verseText"><span class="spinner"></span></div>
     <div class="verse-ref" id="verseRef"></div>
+  </div>
+
+  <!-- DAILY 8 — Contact List -->
+  <div class="card daily8-card">
+    <div class="daily8-header-row">
+      <div class="card-label" style="margin-bottom:0;">📋 Today's 8 — Reach Out</div>
+      <div class="daily8-progress" id="daily8Progress">0 / 8 contacted</div>
+    </div>
+    <div class="daily8-grid" id="daily8Grid"><span class="spinner"></span></div>
   </div>
 
   <!-- WEATHER -->
@@ -746,6 +789,71 @@ async function loadCRMStats() {
   }
 }
 loadCRMStats();
+
+// ── DAILY 8 ────────────────────────────────────────────
+const DAILY8_KEY = 'gd_daily8_' + new Date().toLocaleDateString('en-CA');
+
+function getDaily8Done() {
+  return JSON.parse(localStorage.getItem(DAILY8_KEY) || '[]');
+}
+function toggleDaily8Done(name) {
+  const done = getDaily8Done();
+  const idx = done.indexOf(name);
+  if (idx === -1) done.push(name); else done.splice(idx, 1);
+  localStorage.setItem(DAILY8_KEY, JSON.stringify(done));
+  renderDaily8Progress(done);
+  document.querySelectorAll('[data-daily8="' + CSS.escape(name) + '"]').forEach(el => {
+    const btn = el.querySelector('.daily8-done');
+    const checked = done.includes(name);
+    btn.classList.toggle('checked', checked);
+    btn.textContent = checked ? '✓' : '';
+    el.classList.toggle('done-item', checked);
+  });
+}
+function renderDaily8Progress(done) {
+  const el = document.getElementById('daily8Progress');
+  if (!el) return;
+  const n = done.length;
+  const colour = n >= 8 ? '#34c759' : n >= 5 ? '#ff9f0a' : 'var(--text-tertiary)';
+  el.textContent = n + ' / 8 contacted';
+  el.style.color = colour;
+  if (n >= 8) el.textContent = '🎉 All done for today!';
+}
+
+async function loadDaily8() {
+  try {
+    const res  = await fetch('/daily-contacts');
+    const data = await res.json();
+    if (!data || !data.contacts || !data.contacts.length) return;
+
+    const done = getDaily8Done();
+    renderDaily8Progress(done);
+
+    document.getElementById('daily8Grid').innerHTML = data.contacts.map(c => {
+      const isBday   = c.badges.some(b => b.includes('Birthday'));
+      const isFresh  = c.badges.some(b => b.includes('Never contacted'));
+      const isDone   = done.includes(c.name);
+      const contact  = c.email ? c.email : (c.cell || '—');
+      const bdStr    = c.birthdate ? ' · 🎂 ' + new Date(c.birthdate).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : '';
+      const lastStr  = c.last_contact ? ' · Last: ' + c.last_contact : '';
+      const cls      = ['daily8-item', isBday ? 'birthday' : isFresh ? 'fresh' : '', isDone ? 'done-item' : ''].filter(Boolean).join(' ');
+
+      return `<div class="${cls}" data-daily8="${c.name.replace(/"/g,'&quot;')}">
+        <div class="daily8-done ${isDone ? 'checked' : ''}" onclick="toggleDaily8Done('${c.name.replace(/'/g,'\\'')}')">
+          ${isDone ? '✓' : ''}
+        </div>
+        <div class="daily8-rank">#${c.rank} · ${c.pipeline}</div>
+        <div class="daily8-name">${c.name}</div>
+        <div class="daily8-contact">${contact}${bdStr}${lastStr}</div>
+        ${c.badges.length ? '<div class="daily8-badges">' + c.badges.map(b => `<span class="daily8-badge">${b}</span>`).join('') + '</div>' : ''}
+        ${c.notes ? '<div class="daily8-contact" style="color:var(--text-tertiary);font-size:10px;">' + c.notes.substring(0,60) + '…</div>' : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('daily8Grid').innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Unavailable</span>';
+  }
+}
+loadDaily8();
 
 // ── TASKS ─────────────────────────────────────────────
 let tasks = JSON.parse(localStorage.getItem('gd_tasks') || '[]');
