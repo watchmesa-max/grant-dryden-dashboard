@@ -765,10 +765,15 @@ function parseICS(text) {
     if (!summary || !startStr) continue;
 
     const parseDate = (s) => {
-      // All-day: 20260704  or datetime: 20260704T100000
+      // All-day: 20260704
       if (s.length === 8) return new Date(
         parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, parseInt(s.slice(6,8))
       );
+      // UTC datetime (ends in Z): parse as ISO so browser converts UTC → SAST
+      if (s.endsWith('Z')) {
+        return new Date(`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(9,11)}:${s.slice(11,13)}:00Z`);
+      }
+      // Local datetime with TZID=Africa/Johannesburg: treat as browser local time
       return new Date(
         parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, parseInt(s.slice(6,8)),
         parseInt(s.slice(9,11)), parseInt(s.slice(11,13)), 0
