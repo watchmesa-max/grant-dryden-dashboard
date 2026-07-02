@@ -472,6 +472,14 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── /refresh-cache — force-bust the contacts cache ──
+  if (parsed.pathname === '/refresh-cache') {
+    contactsCache = { data: null, date: '' };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, message: 'Cache cleared — next /daily-contacts will fetch fresh data.' }));
+    return;
+  }
+
   // ── /daily-contacts ──
   if (parsed.pathname === '/daily-contacts') {
     try {
