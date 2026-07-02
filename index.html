@@ -414,21 +414,14 @@
     </div>
   </div>
 
-  <!-- CALENDAR — static placeholder with Google Calendar link -->
+  <!-- CALENDAR — iCloud live feed -->
   <div class="card calendar-card">
     <div class="card-label" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>📅 Today's Schedule</span>
-      <a href="https://calendar.google.com" target="_blank" style="font-size:11px; color:var(--accent); text-decoration:none;">Open Calendar ↗</a>
+      <span>📅 Dryden Family Calendar</span>
+      <span id="calStatus" style="font-size:10px; color:var(--text-tertiary);">Loading...</span>
     </div>
     <div class="event-list" id="eventList">
-      <!-- Populated by JS with demo data; replace with Google Calendar API integration -->
-      <div class="event-item">
-        <div class="event-dot"></div>
-        <div>
-          <div class="event-title">Connect Google Calendar</div>
-          <div class="event-sub">Add your API key to see live events</div>
-        </div>
-      </div>
+      <div style="text-align:center;padding:16px;color:var(--text-tertiary);font-size:13px;"><span class="spinner"></span></div>
     </div>
   </div>
 
@@ -714,6 +707,104 @@ document.getElementById('taskInput').addEventListener('keydown', e => {
 });
 
 renderTasks();
+
+// ── iCLOUD CALENDAR ──────────────────────────────────
+const ICS_URL = 'https://p154-caldav.icloud.com/published/2/MTAyNzgxMzE5NjEwMjc4MeQpRiWg8s91ZttUzCscn0LVukQGO_XhrS79WurbTSRN';
+const PROXY   = 'https://api.allorigins.win/get?url=';
+
+function parseICS(text) {
+  const events = [];
+  const blocks = text.split('BEGIN:VEVENT');
+  for (let i = 1; i < blocks.length; i++) {
+    const b = blocks[i];
+    const get = (key) => {
+      const m = b.match(new RegExp(key + '[^:]*:([^\\r\\n]+)'));
+      return m ? m[1].trim() : '';
+    };
+    const summary  = get('SUMMARY');
+    const location = get('LOCATION').replace(/\\n/g, ', ').replace(/\\,/g, ',');
+    const startStr = get('DTSTART');
+    const endStr   = get('DTEND');
+
+    if (!summary || !startStr) continue;
+
+    const parseDate = (s) => {
+      // All-day: 20260704  or datetime: 20260704T100000
+      if (s.length === 8) return new Date(
+        parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, parseInt(s.slice(6,8))
+      );
+      return new Date(
+        parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, parseInt(s.slice(6,8)),
+        parseInt(s.slice(9,11)), parseInt(s.slice(11,13)), 0
+      );
+    };
+
+    const allDay = startStr.length === 8;
+    const start  = parseDate(startStr);
+    const end    = endStr ? parseDate(endStr) : start;
+
+    events.push({ summary, location, start, end, allDay });
+  }
+  events.sort((a, b) => a.start - b.start);
+  return events;
+}
+
+function renderCalendar(events) {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const soon  = new Date(today); soon.setDate(today.getDate() + 14);
+
+  // Events happening today OR upcoming within 14 days
+  const relevant = events.filter(e => {
+    const eDay = new Date(e.start.getFullYear(), e.start.getMonth(), e.start.getDate());
+    return eDay >= today && eDay <= soon;
+  }).slice(0, 8);
+
+  const el = document.getElementById('eventList');
+  if (!relevant.length) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-tertiary);font-size:13px;">Nothing in the next 14 days 🎉</div>';
+    document.getElementById('calStatus').textContent = 'Live ✓';
+    return;
+  }
+
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  el.innerHTML = relevant.map(ev => {
+    const eDay   = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate());
+    const isToday = eDay.getTime() === today.getTime();
+    const isTomorrow = eDay.getTime() === today.getTime() + 86400000;
+    const dayLabel = isToday ? 'Today' : isTomorrow ? 'Tomorrow'
+      : `${dayNames[ev.start.getDay()]} ${ev.start.getDate()} ${months[ev.start.getMonth()]}`;
+    const timeLabel = ev.allDay ? 'All day'
+      : ev.start.toLocaleTimeString('en-ZA', {hour:'2-digit', minute:'2-digit'});
+    const dotColor = isToday ? 'var(--red)' : isTomorrow ? 'var(--orange)' : 'var(--accent)';
+    return `
+      <div class="event-item">
+        <div class="event-dot" style="background:${dotColor};margin-top:6px;"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="event-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ev.summary}</div>
+          <div class="event-sub">${dayLabel} · ${timeLabel}${ev.location ? ' · ' + ev.location.split(',')[0] : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('calStatus').textContent = 'Live ✓';
+}
+
+async function fetchCalendar() {
+  try {
+    const res  = await fetch(PROXY + encodeURIComponent(ICS_URL));
+    const json = await res.json();
+    const events = parseICS(json.contents);
+    renderCalendar(events);
+  } catch(e) {
+    document.getElementById('eventList').innerHTML =
+      '<div style="padding:8px;color:var(--text-tertiary);font-size:12px;">Calendar unavailable — will retry</div>';
+    document.getElementById('calStatus').textContent = 'Offline';
+  }
+}
+fetchCalendar();
+setInterval(fetchCalendar, 900000); // refresh every 15 min
 
 // ── LAST UPDATED ──────────────────────────────────────
 function updateLastUpdated() {
