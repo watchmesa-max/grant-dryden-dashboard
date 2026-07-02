@@ -604,25 +604,38 @@ async function fetchWeather() {
 }
 fetchWeather();
 
-// ── NEWS (curated static + RSS via allorigins proxy) ──
-const staticNews = [
-  { headline: "BYD reports record global sales — SA expansion accelerating", badge: "badge-auto", label: "Auto", meta: "BYD Global · Today" },
-  { headline: "Luxury EV segment grows 31% YoY in Sub-Saharan Africa", badge: "badge-lux", label: "Luxury", meta: "AutoTrader SA · Today" },
-  { headline: "Pagani Utopia: Full details of new V12 hypercar revealed", badge: "badge-auto", label: "Auto", meta: "Top Gear · Today" },
-  { headline: "Premium RTD beverage market hits R4.2bn in South Africa", badge: "badge-biz", label: "Business", meta: "Nielsen SA · This week" },
-  { headline: "Koenigsegg CC850 production batch confirmed sold out", badge: "badge-auto", label: "Auto", meta: "Evo Magazine · Today" },
-  { headline: "SA HNW consumer confidence index rises for third quarter", badge: "badge-biz", label: "Business", meta: "BusinessTech · Today" },
-];
-function renderNews() {
-  const html = staticNews.map(n => `
-    <div class="news-item">
-      <div class="news-headline">${n.headline}</div>
-      <div class="news-meta"><span class="news-badge ${n.badge}">${n.label}</span>${n.meta}</div>
-    </div>
+// ── NEWS (live from server RSS proxy) ────────────────
+function renderNews(items) {
+  if (!items || !items.length) {
+    document.getElementById('newsList').innerHTML =
+      '<div style="color:var(--text-tertiary);font-size:13px;">No articles available</div>';
+    return;
+  }
+  document.getElementById('newsList').innerHTML = items.map(n => `
+    <a href="${n.link}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">
+      <div class="news-item">
+        <div class="news-headline">${n.title}</div>
+        <div class="news-meta">
+          <span class="news-badge" style="background:${n.color}18;color:${n.color};">${n.label}</span>
+          ${n.desc ? n.desc.substring(0,80) + '…' : ''}
+        </div>
+      </div>
+    </a>
   `).join('');
-  document.getElementById('newsList').innerHTML = html;
 }
-renderNews();
+
+async function fetchNews() {
+  try {
+    const res   = await fetch('/news');
+    const items = await res.json();
+    renderNews(items);
+  } catch(e) {
+    document.getElementById('newsList').innerHTML =
+      '<div style="color:var(--text-tertiary);font-size:13px;">News unavailable — will retry</div>';
+  }
+}
+fetchNews();
+setInterval(fetchNews, 1800000); // refresh every 30 min
 
 // ── VENTURES ──────────────────────────────────────────
 const ventures = [
