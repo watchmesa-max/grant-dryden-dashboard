@@ -954,7 +954,7 @@ async function loadDaily8() {
       const cls      = ['daily8-item', isBday ? 'birthday' : isFresh ? 'fresh' : '', isDone ? 'done-item' : ''].filter(Boolean).join(' ');
 
       return `<div class="${cls}" data-daily8="${c.name.replace(/"/g,'&quot;')}">
-        <div class="daily8-done ${isDone ? 'checked' : ''}" onclick="event.stopPropagation();toggleDaily8Done('${c.name.replace(/'/g,'\\'')}')">
+        <div class="daily8-done ${isDone ? 'checked' : ''}" onclick="event.stopPropagation();toggleDaily8Done(this.closest('[data-daily8]').dataset.daily8)">
           ${isDone ? '✓' : ''}
         </div>
         <div class="daily8-rank">#${c.rank} · ${c.pipeline}</div>
