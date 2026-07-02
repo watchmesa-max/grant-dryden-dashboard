@@ -245,7 +245,11 @@ async function fetchDailyContacts() {
       .slice(0, 8)
       .map((c, i) => ({
         rank:          i + 1,
+        id:            c.id || null,
+        entity_id:     c.entity_id || null,
         name:          [c.first_name, c.surname].filter(Boolean).join(' '),
+        first_name:    c.first_name || null,
+        surname:       c.surname || null,
         email:         c.email || null,
         cell:          c.cell  || null,
         pipeline:      c.pipeline_stage || '—',
@@ -263,12 +267,84 @@ async function fetchDailyContacts() {
   }
 }
 
+// ── POST to Supabase ─────────────────────────────────
+function postSupabase(path, body, method) {
+  return new Promise((resolve, reject) => {
+    const data   = JSON.stringify(body);
+    const m      = (method || 'POST').toUpperCase();
+    const opts   = {
+      hostname: 'xpfwfdfivehigppdmhnx.supabase.co',
+      path:     '/rest/v1' + path,
+      method:   m,
+      headers:  {
+        'apikey':         SUPABASE_KEY,
+        'Authorization':  'Bearer ' + SUPABASE_KEY,
+        'Content-Type':   'application/json',
+        'Content-Length': Buffer.byteLength(data),
+        'Prefer':         'return=representation',
+      },
+    };
+    const req = https.request(opts, r => {
+      let d = ''; r.on('data', c => d += c);
+      r.on('end', () => resolve({ status: r.statusCode, body: d }));
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+    req.write(data);
+    req.end();
+  });
+}
+
+// ── Message template generator ───────────────────────
+function buildTemplate(c, vehicle) {
+  const first   = c.first_name || c.name.split(' ')[0] || 'there';
+  const isBday  = (c.badges || []).some(b => b.includes('Birthday'));
+  const pipeline = c.pipeline || '';
+  const brand    = vehicle ? vehicle.brand : null;
+  const model    = vehicle ? vehicle.model : null;
+  const car      = brand && model ? `${brand} ${model}` : brand || model || null;
+
+  let opening = '';
+  let body    = '';
+
+  if (isBday) {
+    opening = `Hi ${first}, wishing you a very happy birthday! 🎉`;
+    body    = car
+      ? `Hope you're celebrating in style — the ${car} never looked better on a birthday drive.`
+      : `Hope you have a wonderful day with your loved ones.`;
+  } else if (pipeline === 'Owner') {
+    opening = `Hi ${first}, hope all is well with you.`;
+    body    = car
+      ? `Just wanted to check in and see how you're enjoying the ${car}. It would be great to catch up.`
+      : `Just wanted to reconnect — it's been a while and I'd love to know what you're up to these days.`;
+  } else {
+    opening = `Hi ${first}, hope you're doing well!`;
+    body    = `I was thinking of you recently and wanted to reach out. Always great staying in touch with the people in my network who matter.`;
+  }
+
+  const closing = `\n\nIf there's anything I can help with — whether it's a vehicle, an introduction, or just a conversation — I'm here.\n\nBest regards,\nGrant`;
+
+  return `${opening}\n\n${body}${closing}`;
+}
+
+// ── Read body from POST request ───────────────────────
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; if (body.length > 1e5) req.destroy(); });
+    req.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { resolve({}); } });
+    req.on('error', reject);
+  });
+}
+
 // ── HTTP Server ──────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url);
 
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
   // ── /calendar ──
   if (parsed.pathname === '/calendar') {
@@ -294,6 +370,104 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(items));
     } catch(e) {
       res.writeHead(500); res.end('[]');
+    }
+    return;
+  }
+
+  // ── /message-template  (POST {contact}) ──
+  if (parsed.pathname === '/message-template' && req.method === 'POST') {
+    try {
+      const contact = await readBody(req);
+      // Optionally fetch their vehicle
+      let vehicle = null;
+      if (contact.id) {
+        const vr = await fetchSupabase(`/vehicle_status?select=brand,model&owner_id=eq.${contact.id}&limit=1`);
+        vehicle  = Array.isArray(vr.json) && vr.json.length ? vr.json[0] : null;
+      }
+      const template = buildTemplate(contact, vehicle);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ template, vehicle }));
+    } catch(e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // ── /log-contact  (POST {customer_id, entity_id, type, direction, subject, summary, occurred_at}) ──
+  if (parsed.pathname === '/log-contact' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const record = {
+        customer_id:  body.customer_id,
+        entity_id:    body.entity_id || '7cg',
+        type:         body.type      || 'message',
+        direction:    body.direction || 'outbound',
+        subject:      body.subject   || 'Outreach',
+        body:         body.message   || null,
+        summary:      body.summary   || body.message || null,
+        occurred_at:  body.occurred_at || new Date().toISOString(),
+        logged_by:    'Grant',
+      };
+      const r = await postSupabase('/customer_comms', record);
+      // Invalidate contacts cache so next load reflects the comm
+      contactsCache = { data: null, date: '' };
+      res.writeHead(r.status < 300 ? 200 : 500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: r.status < 300, status: r.status }));
+    } catch(e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // ── /search-customers  (GET ?q=name) ──
+  if (parsed.pathname === '/search-customers') {
+    try {
+      const q   = (new URLSearchParams(parsed.query || '')).get('q') || '';
+      const enc = encodeURIComponent(q);
+      const r   = await fetchSupabase(
+        `/customer_card?select=id,first_name,surname,email,cell,pipeline_stage,notes,entity_id` +
+        `&or=(first_name.ilike.*${enc}*,surname.ilike.*${enc}*,email.ilike.*${enc}*)&limit=10`
+      );
+      const results = (Array.isArray(r.json) ? r.json : []).map(c => ({
+        id:       c.id,
+        name:     [c.first_name, c.surname].filter(Boolean).join(' '),
+        email:    c.email,
+        cell:     c.cell,
+        pipeline: c.pipeline_stage,
+        entity_id: c.entity_id,
+      }));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(results));
+    } catch(e) {
+      res.writeHead(500); res.end('[]');
+    }
+    return;
+  }
+
+  // ── /log-connection  (POST {from_id, to_id, from_name, to_name, reason, outcome}) ──
+  if (parsed.pathname === '/log-connection' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      // Log as a note on both customers' comms
+      const note = `Connected with: ${body.to_name || body.to_id}. Reason: ${body.reason || '—'}. Outcome: ${body.outcome || 'Pending'}.`;
+      const note2 = `Connected with: ${body.from_name || body.from_id}. Reason: ${body.reason || '—'}. Outcome: ${body.outcome || 'Pending'}.`;
+      const ts = new Date().toISOString();
+      await Promise.all([
+        body.from_id ? postSupabase('/customer_comms', {
+          customer_id: body.from_id, entity_id: body.entity_id || '7cg',
+          type: 'note', direction: 'internal', subject: 'Network connection',
+          summary: note, occurred_at: ts, logged_by: 'Grant',
+        }) : Promise.resolve(),
+        body.to_id ? postSupabase('/customer_comms', {
+          customer_id: body.to_id, entity_id: body.entity_id || '7cg',
+          type: 'note', direction: 'internal', subject: 'Network connection',
+          summary: note2, occurred_at: ts, logged_by: 'Grant',
+        }) : Promise.resolve(),
+      ]);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch(e) {
+      res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
     }
     return;
   }

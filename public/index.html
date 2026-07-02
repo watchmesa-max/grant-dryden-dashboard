@@ -416,6 +416,80 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    /* ── CONTACT MODAL ────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border-radius: 18px; width: min(560px, 95vw);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25); padding: 24px;
+      max-height: 90vh; overflow-y: auto; position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; width: 28px; height: 28px;
+      border-radius: 50%; border: none; background: var(--border);
+      cursor: pointer; font-size: 14px; color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .modal-meta { font-size: 12px; color: var(--text-tertiary); margin-bottom: 16px; }
+    .modal-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .modal-tab {
+      font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 20px;
+      border: 1px solid var(--border); cursor: pointer; background: var(--bg);
+      color: var(--text-secondary); transition: all 0.15s;
+    }
+    .modal-tab.active { background: #0071e3; color: #fff; border-color: #0071e3; }
+    .modal-panel { display: none; }
+    .modal-panel.active { display: block; }
+    .modal-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; margin-top: 14px; }
+    .modal-textarea {
+      width: 100%; min-height: 130px; border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; font-family: inherit; font-size: 13px; color: var(--text-primary);
+      background: var(--bg); resize: vertical; outline: none; box-sizing: border-box;
+      line-height: 1.5;
+    }
+    .modal-input {
+      width: 100%; border: 1px solid var(--border); border-radius: 10px;
+      padding: 9px 12px; font-family: inherit; font-size: 13px; color: var(--text-primary);
+      background: var(--bg); outline: none; box-sizing: border-box; margin-bottom: 2px;
+    }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .modal-btn {
+      flex: 1; min-width: 110px; padding: 10px 16px; border-radius: 10px; border: none;
+      font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .modal-btn:hover { opacity: 0.85; }
+    .modal-btn.primary  { background: #0071e3; color: #fff; }
+    .modal-btn.green    { background: #25D366; color: #fff; }
+    .modal-btn.ghost    { background: var(--border); color: var(--text-primary); }
+    .modal-btn.danger   { background: #ff3b30; color: #fff; }
+    .modal-success { font-size: 12px; color: #34c759; margin-top: 8px; display: none; }
+    .modal-error   { font-size: 12px; color: #ff3b30; margin-top: 8px; display: none; }
+    .search-results { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .search-result-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: var(--bg); border-radius: 10px;
+      border: 1px solid var(--border); font-size: 13px; cursor: pointer;
+    }
+    .search-result-item:hover { border-color: #0071e3; }
+    .search-result-item .sr-name { font-weight: 500; }
+    .search-result-item .sr-meta { font-size: 11px; color: var(--text-tertiary); }
+    .connect-selected {
+      padding: 10px 12px; background: var(--bg); border-radius: 10px;
+      border: 1px dashed var(--border); font-size: 13px; color: var(--text-secondary);
+      min-height: 38px;
+    }
+    .daily8-item:hover .daily8-open-btn { opacity: 1; }
+    .daily8-open-btn {
+      position: absolute; bottom: 10px; right: 10px; font-size: 10px;
+      color: #0071e3; opacity: 0; transition: opacity 0.15s; cursor: pointer;
+      background: none; border: none; font-family: inherit; padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -839,7 +913,7 @@ async function loadDaily8() {
       const cls      = ['daily8-item', isBday ? 'birthday' : isFresh ? 'fresh' : '', isDone ? 'done-item' : ''].filter(Boolean).join(' ');
 
       return `<div class="${cls}" data-daily8="${c.name.replace(/"/g,'&quot;')}">
-        <div class="daily8-done ${isDone ? 'checked' : ''}" onclick="toggleDaily8Done('${c.name.replace(/'/g,'\\'')}')">
+        <div class="daily8-done ${isDone ? 'checked' : ''}" onclick="event.stopPropagation();toggleDaily8Done('${c.name.replace(/'/g,'\\'')}')">
           ${isDone ? '✓' : ''}
         </div>
         <div class="daily8-rank">#${c.rank} · ${c.pipeline}</div>
@@ -847,6 +921,7 @@ async function loadDaily8() {
         <div class="daily8-contact">${contact}${bdStr}${lastStr}</div>
         ${c.badges.length ? '<div class="daily8-badges">' + c.badges.map(b => `<span class="daily8-badge">${b}</span>`).join('') + '</div>' : ''}
         ${c.notes ? '<div class="daily8-contact" style="color:var(--text-tertiary);font-size:10px;">' + c.notes.substring(0,60) + '…</div>' : ''}
+        <button class="daily8-open-btn" onclick="openModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">Open ›</button>
       </div>`;
     }).join('');
   } catch(e) {
@@ -1029,6 +1104,274 @@ function updateLastUpdated() {
 updateLastUpdated();
 setInterval(() => { fetchWeather(); updateLastUpdated(); }, 600000); // refresh every 10 min
 
+</script>
+
+<!-- ══════════════════════════════════════════════ -->
+<!--  CONTACT MODAL                                 -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-name" id="modalName">—</div>
+    <div class="modal-meta" id="modalMeta">—</div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('message',this)">✉ Message</button>
+      <button class="modal-tab"        onclick="switchTab('log',this)">📝 Log Contact</button>
+      <button class="modal-tab"        onclick="switchTab('connect',this)">🔗 Connect</button>
+    </div>
+
+    <!-- TAB 1: Message Template + WhatsApp -->
+    <div class="modal-panel active" id="tab-message">
+      <div class="modal-label">Personalised Opener</div>
+      <textarea class="modal-textarea" id="msgTemplate" placeholder="Loading template…"></textarea>
+      <div id="msgVehicle" style="font-size:11px;color:var(--text-tertiary);margin-top:4px;"></div>
+      <div class="modal-actions">
+        <button class="modal-btn ghost"  onclick="copyTemplate()">📋 Copy</button>
+        <button class="modal-btn green"  id="waBtn" onclick="openWhatsApp()">💬 WhatsApp</button>
+        <button class="modal-btn primary" onclick="openWhatsAppEmail()">✉ Email Draft</button>
+      </div>
+      <div class="modal-success" id="copySuccess">✓ Copied to clipboard</div>
+    </div>
+
+    <!-- TAB 2: Log Contact Outcome -->
+    <div class="modal-panel" id="tab-log">
+      <div class="modal-label">Contact Type</div>
+      <select class="modal-input" id="logType">
+        <option value="message">WhatsApp / Message</option>
+        <option value="call">Phone Call</option>
+        <option value="email">Email</option>
+        <option value="meeting">Meeting</option>
+        <option value="note">Note</option>
+      </select>
+      <div class="modal-label">What happened? (summary)</div>
+      <textarea class="modal-textarea" id="logSummary" placeholder="e.g. Reconnected after 2 years. Interested in a new Aston Martin. Follow up next week." style="min-height:90px;"></textarea>
+      <div class="modal-label">Outcome / Next Step</div>
+      <input class="modal-input" id="logSubject" placeholder="e.g. Follow up call next Tuesday" />
+      <div class="modal-actions">
+        <button class="modal-btn ghost"   onclick="closeModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="submitLog()">✓ Save to CRM</button>
+      </div>
+      <div class="modal-success" id="logSuccess">✓ Logged to Supabase</div>
+      <div class="modal-error"   id="logError">⚠ Could not save — try again</div>
+    </div>
+
+    <!-- TAB 3: Connect Two People -->
+    <div class="modal-panel" id="tab-connect">
+      <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;">
+        Connect <strong id="connectFromName">this person</strong> with someone else in your network.
+      </p>
+      <div class="modal-label">Search for the second person</div>
+      <input class="modal-input" id="connectSearch" placeholder="Name or email…" oninput="debounceSearch(this.value)" />
+      <div class="search-results" id="connectResults"></div>
+      <div class="modal-label" style="margin-top:12px;">Connecting with</div>
+      <div class="connect-selected" id="connectTarget">— search above and select —</div>
+      <div class="modal-label">Reason for connection</div>
+      <input class="modal-input" id="connectReason" placeholder="e.g. Both Aston Martin owners, JHB property interests…" />
+      <div class="modal-label">Expected outcome</div>
+      <input class="modal-input" id="connectOutcome" placeholder="e.g. Introduction call, deal, referral…" />
+      <div class="modal-actions">
+        <button class="modal-btn ghost"   onclick="closeModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="submitConnection()">🔗 Log Connection</button>
+      </div>
+      <div class="modal-success" id="connectSuccess">✓ Connection logged on both profiles</div>
+      <div class="modal-error"   id="connectError">⚠ Could not save — try again</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ MODAL STATE ══════════════════════════════════════
+let _modalContact  = null;   // full contact object from daily8
+let _connectTarget = null;   // {id, name, email, entity_id}
+
+function openModal(contact) {
+  _modalContact = contact;
+  _connectTarget = null;
+
+  // Header
+  document.getElementById('modalName').textContent = contact.name;
+  const metaParts = [contact.pipeline, contact.email, contact.cell].filter(Boolean);
+  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
+  document.getElementById('connectFromName').textContent = contact.name;
+
+  // Reset tabs
+  switchTab('message', document.querySelector('.modal-tab'));
+
+  // Reset state
+  document.getElementById('msgTemplate').value = 'Loading…';
+  document.getElementById('msgVehicle').textContent = '';
+  document.getElementById('logSummary').value = '';
+  document.getElementById('logSubject').value = '';
+  document.getElementById('connectSearch').value = '';
+  document.getElementById('connectResults').innerHTML = '';
+  document.getElementById('connectTarget').textContent = '— search above and select —';
+  ['copySuccess','logSuccess','logError','connectSuccess','connectError'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  // WhatsApp button — only show if cell exists
+  const waBtn = document.getElementById('waBtn');
+  waBtn.style.display = contact.cell ? '' : 'none';
+
+  // Show modal
+  document.getElementById('contactModal').classList.add('open');
+
+  // Fetch template async
+  fetch('/message-template', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(contact),
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('msgTemplate').value = d.template || '';
+    if (d.vehicle) {
+      document.getElementById('msgVehicle').textContent =
+        '🚗 ' + (d.vehicle.brand || '') + ' ' + (d.vehicle.model || '');
+    }
+  })
+  .catch(() => {
+    document.getElementById('msgTemplate').value = 'Hi ' + contact.name.split(' ')[0] + ',\n\nHope you\'re well — just wanted to reach out and reconnect.\n\nBest regards,\nGrant';
+  });
+}
+
+function closeModal() {
+  document.getElementById('contactModal').classList.remove('open');
+  _modalContact = null;
+}
+
+// Close on overlay click
+document.getElementById('contactModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-panel').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.querySelectorAll('.modal-tab')[['message','log','connect'].indexOf(name)].classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Feature 1: Copy Template ──────────────────────────
+function copyTemplate() {
+  const txt = document.getElementById('msgTemplate').value;
+  navigator.clipboard.writeText(txt).then(() => {
+    const el = document.getElementById('copySuccess');
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 2500);
+  });
+}
+
+// ── Feature 1: WhatsApp Deep Link ─────────────────────
+function openWhatsApp() {
+  if (!_modalContact || !_modalContact.cell) return;
+  const cell = _modalContact.cell.replace(/\D/g,'');
+  const intl = cell.startsWith('0') ? '27' + cell.slice(1) : cell;
+  const msg  = encodeURIComponent(document.getElementById('msgTemplate').value);
+  window.open('https://wa.me/' + intl + '?text=' + msg, '_blank');
+}
+
+function openWhatsAppEmail() {
+  if (!_modalContact) return;
+  const body  = encodeURIComponent(document.getElementById('msgTemplate').value);
+  const email = _modalContact.email || '';
+  window.open('mailto:' + email + '?body=' + body, '_blank');
+}
+
+// ── Feature 2: Log Contact ────────────────────────────
+async function submitLog() {
+  if (!_modalContact) return;
+  const summary = document.getElementById('logSummary').value.trim();
+  if (!summary) { document.getElementById('logError').textContent = '⚠ Please add a summary'; document.getElementById('logError').style.display = 'block'; return; }
+
+  try {
+    const r = await fetch('/log-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id: _modalContact.id,
+        entity_id:   _modalContact.entity_id || '7cg',
+        type:        document.getElementById('logType').value,
+        subject:     document.getElementById('logSubject').value || 'Outreach',
+        summary:     summary,
+        message:     summary,
+      }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('logSuccess').style.display = 'block';
+      document.getElementById('logError').style.display   = 'none';
+      // Tick off this contact on the daily8 list
+      if (_modalContact.name) toggleDaily8Done(_modalContact.name);
+      setTimeout(closeModal, 1800);
+    } else {
+      throw new Error('not ok');
+    }
+  } catch(e) {
+    document.getElementById('logError').textContent = '⚠ Could not save — try again';
+    document.getElementById('logError').style.display = 'block';
+  }
+}
+
+// ── Feature 3: Connect ────────────────────────────────
+let _searchTimer = null;
+function debounceSearch(q) {
+  clearTimeout(_searchTimer);
+  if (q.length < 2) { document.getElementById('connectResults').innerHTML = ''; return; }
+  _searchTimer = setTimeout(() => runSearch(q), 350);
+}
+
+async function runSearch(q) {
+  const res = await fetch('/search-customers?q=' + encodeURIComponent(q));
+  const data = await res.json();
+  document.getElementById('connectResults').innerHTML = data.map(c =>
+    `<div class="search-result-item" onclick="selectConnect(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      <div><div class="sr-name">${c.name}</div><div class="sr-meta">${c.email || c.cell || ''} · ${c.pipeline || ''}</div></div>
+      <div style="font-size:18px;color:#0071e3;">+</div>
+    </div>`
+  ).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:6px 0;">No results</div>';
+}
+
+function selectConnect(c) {
+  _connectTarget = c;
+  document.getElementById('connectTarget').textContent = c.name + (c.email ? ' · ' + c.email : '');
+  document.getElementById('connectResults').innerHTML = '';
+  document.getElementById('connectSearch').value = '';
+}
+
+async function submitConnection() {
+  if (!_modalContact || !_connectTarget) {
+    document.getElementById('connectError').textContent = '⚠ Select a second person first';
+    document.getElementById('connectError').style.display = 'block';
+    return;
+  }
+  try {
+    const r = await fetch('/log-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from_id:    _modalContact.id,
+        from_name:  _modalContact.name,
+        to_id:      _connectTarget.id,
+        to_name:    _connectTarget.name,
+        entity_id:  _modalContact.entity_id || '7cg',
+        reason:     document.getElementById('connectReason').value,
+        outcome:    document.getElementById('connectOutcome').value,
+      }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('connectSuccess').style.display = 'block';
+      document.getElementById('connectError').style.display   = 'none';
+      setTimeout(closeModal, 1800);
+    } else { throw new Error(); }
+  } catch(e) {
+    document.getElementById('connectError').textContent = '⚠ Could not save — try again';
+    document.getElementById('connectError').style.display = 'block';
+  }
+}
 </script>
 </body>
 </html>
