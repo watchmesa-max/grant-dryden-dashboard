@@ -709,8 +709,7 @@ document.getElementById('taskInput').addEventListener('keydown', e => {
 renderTasks();
 
 // ── iCLOUD CALENDAR ──────────────────────────────────
-const ICS_URL = 'https://p154-caldav.icloud.com/published/2/MTAyNzgxMzE5NjEwMjc4MeQpRiWg8s91ZttUzCscn0LVukQGO_XhrS79WurbTSRN';
-const PROXY   = 'https://api.allorigins.win/get?url=';
+// Calendar is fetched via our own server proxy at /calendar (avoids CORS issues)
 
 function parseICS(text) {
   const events = [];
@@ -793,9 +792,10 @@ function renderCalendar(events) {
 
 async function fetchCalendar() {
   try {
-    const res  = await fetch(PROXY + encodeURIComponent(ICS_URL));
-    const json = await res.json();
-    const events = parseICS(json.contents);
+    // Fetch from our own server-side proxy — no CORS issues
+    const res    = await fetch('/calendar');
+    const text   = await res.text();
+    const events = parseICS(text);
     renderCalendar(events);
   } catch(e) {
     document.getElementById('eventList').innerHTML =
