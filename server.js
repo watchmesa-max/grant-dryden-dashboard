@@ -308,21 +308,21 @@ function buildTemplate(c, vehicle) {
   let body    = '';
 
   if (isBday) {
-    opening = `Hi ${first}, wishing you a very happy birthday! 🎉`;
+    opening = `Good morning ${first},\n\nWishing you a very happy birthday today. I hope this is the start of a truly wonderful year ahead.`;
     body    = car
-      ? `Hope you're celebrating in style — the ${car} never looked better on a birthday drive.`
-      : `Hope you have a wonderful day with your loved ones.`;
+      ? `I imagine the ${car} is the perfect companion for a day like today. Enjoy every moment of it.`
+      : `I hope you spend the day surrounded by the people who matter most to you.`;
   } else if (pipeline === 'Owner') {
-    opening = `Hi ${first}, hope all is well with you.`;
+    opening = `Good morning ${first},\n\nI hope you are well. I wanted to reach out personally to check in and hear how you are finding the ${car || 'your vehicle'}.`;
     body    = car
-      ? `Just wanted to check in and see how you're enjoying the ${car}. It would be great to catch up.`
-      : `Just wanted to reconnect — it's been a while and I'd love to know what you're up to these days.`;
+      ? `These are vehicles built to be experienced and I would love to know that yours is living up to every expectation. Please do not hesitate to reach out anytime.`
+      : `It would be great to reconnect. Please do not hesitate to reach out anytime.`;
   } else {
-    opening = `Hi ${first}, hope you're doing well!`;
-    body    = `I was thinking of you recently and wanted to reach out. Always great staying in touch with the people in my network who matter.`;
+    opening = `Good morning ${first},\n\nI hope this message finds you well. I was thinking of you recently and wanted to reach out personally.`;
+    body    = `I always value the relationships I have built over the years and yours is one I hold in high regard. If there is ever anything I can assist with, please do not hesitate to get in touch.`;
   }
 
-  const closing = `\n\nIf there's anything I can help with — whether it's a vehicle, an introduction, or just a conversation — I'm here.\n\nBest regards,\nGrant`;
+  const closing = `\n\nBest regards,\nGrant`;
 
   return `${opening}\n\n${body}${closing}`;
 }
