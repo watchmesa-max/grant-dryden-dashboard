@@ -291,6 +291,51 @@
 
     /* WEATHER FORECAST */
     .forecast-card { grid-column: span 4; }
+    .crm-card { grid-column: span 5; }
+    .crm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .crm-stat { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+    .crm-stat-val { font-size: 22px; font-weight: 600; color: var(--text-primary); line-height: 1; }
+    .crm-stat-label { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
+    .crm-brands { display: flex; flex-direction: column; gap: 6px; }
+    .crm-brand-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .crm-brand-name { width: 90px; color: var(--text-secondary); flex-shrink: 0; }
+    .crm-brand-bar { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .crm-brand-fill { height: 100%; border-radius: 3px; }
+    .crm-brand-count { font-size: 11px; color: var(--text-tertiary); min-width: 28px; text-align: right; }
+
+    /* DAILY 8 */
+    .daily8-card { grid-column: span 12; }
+    .daily8-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .daily8-item {
+      background: var(--bg); border-radius: 12px; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 5px;
+      border-left: 3px solid var(--border); transition: border-color 0.2s;
+      position: relative;
+    }
+    .daily8-item.birthday { border-left-color: #ff9f0a; }
+    .daily8-item.fresh    { border-left-color: #34c759; }
+    .daily8-rank { font-size: 10px; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.05em; }
+    .daily8-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .daily8-contact { font-size: 11px; color: var(--text-secondary); }
+    .daily8-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+    .daily8-badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 20px;
+      background: var(--border); color: var(--text-secondary);
+    }
+    .daily8-done {
+      position: absolute; top: 10px; right: 10px;
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1.5px solid var(--border); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; background: var(--card); color: transparent;
+      transition: all 0.15s;
+    }
+    .daily8-done.checked { background: #34c759; border-color: #34c759; color: #fff; }
+    .daily8-item.done-item { opacity: 0.45; }
+    .daily8-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .daily8-progress { font-size: 11px; color: var(--text-tertiary); }
+    @media (max-width: 900px) { .daily8-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .daily8-grid { grid-template-columns: 1fr 1fr; } }
     .forecast-row {
       display: flex;
       justify-content: space-between;
@@ -356,13 +401,13 @@
     /* RESPONSIVE */
     @media (max-width: 900px) {
       body { padding: 16px; }
-      .weather-card, .forecast-card, .family-card { grid-column: span 6; }
+      .weather-card, .forecast-card, .crm-card, .family-card { grid-column: span 6; }
       .calendar-card, .tasks-card { grid-column: span 6; }
       .news-card, .ventures-card { grid-column: span 12; }
     }
     @media (max-width: 600px) {
       .header { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .weather-card, .forecast-card, .family-card,
+      .weather-card, .forecast-card, .crm-card, .family-card,
       .calendar-card, .tasks-card,
       .news-card, .ventures-card { grid-column: span 12; }
     }
@@ -371,6 +416,80 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    /* ── CONTACT MODAL ────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border-radius: 18px; width: min(560px, 95vw);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25); padding: 24px;
+      max-height: 90vh; overflow-y: auto; position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; width: 28px; height: 28px;
+      border-radius: 50%; border: none; background: var(--border);
+      cursor: pointer; font-size: 14px; color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .modal-meta { font-size: 12px; color: var(--text-tertiary); margin-bottom: 16px; }
+    .modal-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .modal-tab {
+      font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 20px;
+      border: 1px solid var(--border); cursor: pointer; background: var(--bg);
+      color: var(--text-secondary); transition: all 0.15s;
+    }
+    .modal-tab.active { background: #0071e3; color: #fff; border-color: #0071e3; }
+    .modal-panel { display: none; }
+    .modal-panel.active { display: block; }
+    .modal-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; margin-top: 14px; }
+    .modal-textarea {
+      width: 100%; min-height: 130px; border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; font-family: inherit; font-size: 13px; color: var(--text-primary);
+      background: var(--bg); resize: vertical; outline: none; box-sizing: border-box;
+      line-height: 1.5;
+    }
+    .modal-input {
+      width: 100%; border: 1px solid var(--border); border-radius: 10px;
+      padding: 9px 12px; font-family: inherit; font-size: 13px; color: var(--text-primary);
+      background: var(--bg); outline: none; box-sizing: border-box; margin-bottom: 2px;
+    }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .modal-btn {
+      flex: 1; min-width: 110px; padding: 10px 16px; border-radius: 10px; border: none;
+      font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .modal-btn:hover { opacity: 0.85; }
+    .modal-btn.primary  { background: #0071e3; color: #fff; }
+    .modal-btn.green    { background: #25D366; color: #fff; }
+    .modal-btn.ghost    { background: var(--border); color: var(--text-primary); }
+    .modal-btn.danger   { background: #ff3b30; color: #fff; }
+    .modal-success { font-size: 12px; color: #34c759; margin-top: 8px; display: none; }
+    .modal-error   { font-size: 12px; color: #ff3b30; margin-top: 8px; display: none; }
+    .search-results { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .search-result-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: var(--bg); border-radius: 10px;
+      border: 1px solid var(--border); font-size: 13px; cursor: pointer;
+    }
+    .search-result-item:hover { border-color: #0071e3; }
+    .search-result-item .sr-name { font-weight: 500; }
+    .search-result-item .sr-meta { font-size: 11px; color: var(--text-tertiary); }
+    .connect-selected {
+      padding: 10px 12px; background: var(--bg); border-radius: 10px;
+      border: 1px dashed var(--border); font-size: 13px; color: var(--text-secondary);
+      min-height: 38px;
+    }
+    .daily8-item:hover .daily8-open-btn { opacity: 1; }
+    .daily8-open-btn {
+      position: absolute; bottom: 10px; right: 10px; font-size: 10px;
+      color: #0071e3; opacity: 0; transition: opacity 0.15s; cursor: pointer;
+      background: none; border: none; font-family: inherit; padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -395,6 +514,18 @@
     <div class="card-label">✦ Verse of the Day</div>
     <div class="verse-text" id="verseText"><span class="spinner"></span></div>
     <div class="verse-ref" id="verseRef"></div>
+  </div>
+
+  <!-- DAILY 8 — Contact List -->
+  <div class="card daily8-card">
+    <div class="daily8-header-row">
+      <div class="card-label" style="margin-bottom:0;">📋 Today's 8 — Reach Out</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="openAdhocModal()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text-secondary);cursor:pointer;">＋ Log Contact</button>
+        <div class="daily8-progress" id="daily8Progress">0 / 8 contacted</div>
+      </div>
+    </div>
+    <div class="daily8-grid" id="daily8Grid"><span class="spinner"></span></div>
   </div>
 
   <!-- WEATHER -->
@@ -458,59 +589,95 @@
     <div class="forecast-row" id="forecastRow"><span class="spinner"></span></div>
   </div>
 
+  <!-- CRM SNAPSHOT -->
+  <div class="card crm-card">
+    <div class="card-label">📊 CRM Snapshot</div>
+    <div class="crm-stats" id="crmStats">
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Customers</div></div>
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Vehicles</div></div>
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Service Events</div></div>
+      <div class="crm-stat"><div class="crm-stat-val">—</div><div class="crm-stat-label">Prospects</div></div>
+    </div>
+    <div class="card-label" style="font-size:10px; margin-bottom:8px; margin-top:4px;">BY BRAND</div>
+    <div class="crm-brands" id="crmBrands"><span class="spinner"></span></div>
+  </div>
+
   <!-- FAMILY -->
   <div class="card family-card">
     <div class="card-label">🏠 The Drydens</div>
     <div class="family-list">
       <div class="family-item">
+        <div class="family-avatar" style="background:#0071e3; color:#fff; font-size:12px;">GD</div>
+        <div>
+          <div class="family-name">Grant <span style="font-size:11px;color:var(--text-tertiary);">Age 37</span></div>
+          <div class="family-status">Self Employed</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 18 July 1988</div>
+        </div>
+      </div>
+      <div class="family-item">
         <div class="family-avatar" style="background:#fde8f5; color:#c0399a;">G</div>
         <div>
-          <div class="family-name">Gabi</div>
+          <div class="family-name">Gabi <span style="font-size:11px;color:var(--text-tertiary);">Age 37</span></div>
           <div class="family-status">Acino — Medical Rep</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 3 November 1988</div>
         </div>
       </div>
       <div class="family-item">
         <div class="family-avatar" style="background:#e8f1fc; color:#0071e3;">Gr</div>
         <div>
-          <div class="family-name">Grayson <span style="font-size:11px;color:var(--text-tertiary);">Age 5</span></div>
+          <div class="family-name">Grayson <span style="font-size:11px;color:var(--text-tertiary);">Age 4</span></div>
           <div class="family-status">School — Grade R</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 2 October 2020</div>
         </div>
       </div>
       <div class="family-item">
         <div class="family-avatar" style="background:#e9f8ed; color:#34c759;">Ki</div>
         <div>
-          <div class="family-name">Kingsley <span style="font-size:11px;color:var(--text-tertiary);">Age 4</span></div>
+          <div class="family-name">Kingsley <span style="font-size:11px;color:var(--text-tertiary);">Age 3</span></div>
           <div class="family-status">School — Grade 00</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 4 April 2022</div>
         </div>
       </div>
       <div class="family-item">
         <div class="family-avatar" style="background:#fff4e0; color:#ff9f0a;">Da</div>
         <div>
-          <div class="family-name">Dakota <span style="font-size:11px;color:var(--text-tertiary);">Age 1</span></div>
+          <div class="family-name">Dakota <span style="font-size:11px;color:var(--text-tertiary);">Age 0</span></div>
           <div class="family-status">Home with Gabi</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 16 April 2025</div>
         </div>
       </div>
       <div style="border-top: 1px solid var(--border); margin: 8px 0;"></div>
       <div class="family-item">
         <div class="family-avatar" style="background:#f0f0f5; color:#6e6e73; font-size:18px;">🐾</div>
         <div>
-          <div class="family-name">Luis & Enzo</div>
-          <div class="family-status">French Bulldogs</div>
+          <div class="family-name">Luis <span style="font-size:11px;color:var(--text-tertiary);">Age 8</span></div>
+          <div class="family-status">French Bulldog</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 2 December 2017</div>
+        </div>
+      </div>
+      <div class="family-item">
+        <div class="family-avatar" style="background:#f0f0f5; color:#6e6e73; font-size:18px;">🐾</div>
+        <div>
+          <div class="family-name">Enzo <span style="font-size:11px;color:var(--text-tertiary);">Age 2</span></div>
+          <div class="family-status">French Bulldog</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 22 October 2023</div>
         </div>
       </div>
       <div style="border-top: 1px solid var(--border); margin: 8px 0;"></div>
       <div class="family-item">
         <div class="family-avatar" style="background:#f5f5ea; color:#8a8a3a;">M</div>
         <div>
-          <div class="family-name">Melody</div>
+          <div class="family-name">Melody <span style="font-size:11px;color:var(--text-tertiary);">Age 53</span></div>
           <div class="family-status">Helper — Full time</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 20 February 1973</div>
         </div>
       </div>
       <div class="family-item">
         <div class="family-avatar" style="background:#f5f5ea; color:#8a8a3a;">S</div>
         <div>
-          <div class="family-name">Sisa</div>
+          <div class="family-name">Sisa <span style="font-size:11px;color:var(--text-tertiary);">Age 31</span></div>
           <div class="family-status">Helper — Mon / Wed / Fri</div>
+          <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 5 December 1994</div>
         </div>
       </div>
     </div>
@@ -558,6 +725,47 @@ const todayVerse = verses[new Date().getDay() % verses.length];
 document.getElementById('verseText').textContent = '"' + todayVerse.text + '"';
 document.getElementById('verseRef').textContent = '— ' + todayVerse.ref;
 
+// ── FETCH WITH TIMEOUT ─────────────────────────────────
+// Wraps fetch() with an AbortController timeout so spinners never hang forever.
+// If the server is cold-starting (Render free tier), shows a wake-up banner.
+let _serverWaking = false;
+async function fetchWithTimeout(url, opts, timeoutMs) {
+  timeoutMs = timeoutMs || 12000;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: ctrl.signal });
+    clearTimeout(timer);
+    return res;
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError' && !_serverWaking) {
+      _serverWaking = true;
+      showWakeUpBanner();
+      // Retry once after 20s (server should be up by then)
+      await new Promise(r => setTimeout(r, 20000));
+      hideWakeUpBanner();
+      _serverWaking = false;
+      return fetch(url, opts); // plain retry, no timeout
+    }
+    throw e;
+  }
+}
+function showWakeUpBanner() {
+  let b = document.getElementById('wakeUpBanner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'wakeUpBanner';
+    b.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#ff9f0a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.2);';
+    b.textContent = '⚡ Waking up server… please wait a moment';
+    document.body.appendChild(b);
+  }
+}
+function hideWakeUpBanner() {
+  const b = document.getElementById('wakeUpBanner');
+  if (b) b.remove();
+}
+
 // ── WEATHER (Open-Meteo, no API key needed) ────────────
 async function fetchWeather() {
   // Johannesburg: lat=-26.2041, lon=28.0473
@@ -604,25 +812,38 @@ async function fetchWeather() {
 }
 fetchWeather();
 
-// ── NEWS (curated static + RSS via allorigins proxy) ──
-const staticNews = [
-  { headline: "BYD reports record global sales — SA expansion accelerating", badge: "badge-auto", label: "Auto", meta: "BYD Global · Today" },
-  { headline: "Luxury EV segment grows 31% YoY in Sub-Saharan Africa", badge: "badge-lux", label: "Luxury", meta: "AutoTrader SA · Today" },
-  { headline: "Pagani Utopia: Full details of new V12 hypercar revealed", badge: "badge-auto", label: "Auto", meta: "Top Gear · Today" },
-  { headline: "Premium RTD beverage market hits R4.2bn in South Africa", badge: "badge-biz", label: "Business", meta: "Nielsen SA · This week" },
-  { headline: "Koenigsegg CC850 production batch confirmed sold out", badge: "badge-auto", label: "Auto", meta: "Evo Magazine · Today" },
-  { headline: "SA HNW consumer confidence index rises for third quarter", badge: "badge-biz", label: "Business", meta: "BusinessTech · Today" },
-];
-function renderNews() {
-  const html = staticNews.map(n => `
-    <div class="news-item">
-      <div class="news-headline">${n.headline}</div>
-      <div class="news-meta"><span class="news-badge ${n.badge}">${n.label}</span>${n.meta}</div>
-    </div>
+// ── NEWS (live from server RSS proxy) ────────────────
+function renderNews(items) {
+  if (!items || !items.length) {
+    document.getElementById('newsList').innerHTML =
+      '<div style="color:var(--text-tertiary);font-size:13px;">No articles available</div>';
+    return;
+  }
+  document.getElementById('newsList').innerHTML = items.map(n => `
+    <a href="${n.link}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">
+      <div class="news-item">
+        <div class="news-headline">${n.title}</div>
+        <div class="news-meta">
+          <span class="news-badge" style="background:${n.color}18;color:${n.color};">${n.label}</span>
+          ${n.desc ? n.desc.substring(0,80) + '…' : ''}
+        </div>
+      </div>
+    </a>
   `).join('');
-  document.getElementById('newsList').innerHTML = html;
 }
-renderNews();
+
+async function fetchNews() {
+  try {
+    const res   = await fetchWithTimeout('/news', {}, 15000);
+    const items = await res.json();
+    renderNews(items);
+  } catch(e) {
+    document.getElementById('newsList').innerHTML =
+      '<div style="color:var(--text-tertiary);font-size:13px;">News unavailable — will retry</div>';
+  }
+}
+fetchNews();
+setInterval(fetchNews, 1800000); // refresh every 30 min
 
 // ── VENTURES ──────────────────────────────────────────
 const ventures = [
@@ -647,6 +868,112 @@ function renderVentures() {
 }
 renderVentures();
 
+// ── CRM SNAPSHOT ───────────────────────────────────────
+const brandColors = {
+  'Aston Martin': '#008542',
+  'McLaren':      '#ff8000',
+  'Rolls-Royce':  '#9a7b4f',
+  'Bentley':      '#1a4480',
+  'Lamborghini':  '#d4a017',
+  'Ferrari':      '#c00',
+  'Porsche':      '#c00',
+  'Bugatti':      '#1a1aff',
+};
+
+async function loadCRMStats() {
+  try {
+    const res = await fetchWithTimeout('/supabase-stats', {}, 15000);
+    const data = await res.json();
+    if (!data || !data.customers) return;
+
+    // Fill in the 4 stat boxes
+    const vals = [data.customers, data.vehicles, data.service_events, data.prospects];
+    const boxes = document.querySelectorAll('#crmStats .crm-stat-val');
+    boxes.forEach((el, i) => { el.textContent = vals[i].toLocaleString(); });
+
+    // Brand breakdown
+    const maxVeh = Math.max(...data.brands.map(b => b.vehicles), 1);
+    document.getElementById('crmBrands').innerHTML = data.brands.map(b => {
+      const color = brandColors[b.brand] || '#0071e3';
+      const pct = Math.round((b.vehicles / maxVeh) * 100);
+      return `<div class="crm-brand-row">
+        <div class="crm-brand-name">${b.brand}</div>
+        <div class="crm-brand-bar"><div class="crm-brand-fill" style="width:${pct}%;background:${color};"></div></div>
+        <div class="crm-brand-count">${b.vehicles}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('crmBrands').innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Unavailable</span>';
+  }
+}
+loadCRMStats();
+
+// ── DAILY 8 ────────────────────────────────────────────
+const DAILY8_KEY = 'gd_daily8_' + new Date().toLocaleDateString('en-CA');
+
+function getDaily8Done() {
+  return JSON.parse(localStorage.getItem(DAILY8_KEY) || '[]');
+}
+function toggleDaily8Done(name) {
+  const done = getDaily8Done();
+  const idx = done.indexOf(name);
+  if (idx === -1) done.push(name); else done.splice(idx, 1);
+  localStorage.setItem(DAILY8_KEY, JSON.stringify(done));
+  renderDaily8Progress(done);
+  document.querySelectorAll('[data-daily8="' + CSS.escape(name) + '"]').forEach(el => {
+    const btn = el.querySelector('.daily8-done');
+    const checked = done.includes(name);
+    btn.classList.toggle('checked', checked);
+    btn.textContent = checked ? '✓' : '';
+    el.classList.toggle('done-item', checked);
+  });
+}
+function renderDaily8Progress(done) {
+  const el = document.getElementById('daily8Progress');
+  if (!el) return;
+  const n = done.length;
+  const colour = n >= 8 ? '#34c759' : n >= 5 ? '#ff9f0a' : 'var(--text-tertiary)';
+  el.textContent = n + ' / 8 contacted';
+  el.style.color = colour;
+  if (n >= 8) el.textContent = '🎉 All done for today!';
+}
+
+async function loadDaily8() {
+  try {
+    const res  = await fetchWithTimeout('/daily-contacts', {}, 15000);
+    const data = await res.json();
+    if (!data || !data.contacts || !data.contacts.length) return;
+
+    const done = getDaily8Done();
+    renderDaily8Progress(done);
+
+    document.getElementById('daily8Grid').innerHTML = data.contacts.map(c => {
+      const isBday   = c.badges.some(b => b.includes('Birthday'));
+      const isFresh  = c.badges.some(b => b.includes('Never contacted'));
+      const isDone   = done.includes(c.name);
+      const contact  = c.email ? c.email : (c.cell || '—');
+      const bdStr    = c.birthdate ? ' · 🎂 ' + new Date(c.birthdate).toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) : '';
+      const lastStr  = c.last_contact ? ' · Last: ' + c.last_contact : '';
+      const cls      = ['daily8-item', isBday ? 'birthday' : isFresh ? 'fresh' : '', isDone ? 'done-item' : ''].filter(Boolean).join(' ');
+
+      return `<div class="${cls}" data-daily8="${c.name.replace(/"/g,'&quot;')}">
+        <div class="daily8-done ${isDone ? 'checked' : ''}" onclick="event.stopPropagation();toggleDaily8Done(this.closest('[data-daily8]').dataset.daily8)">
+          ${isDone ? '✓' : ''}
+        </div>
+        <div class="daily8-rank">#${c.rank} · ${c.pipeline}</div>
+        <div class="daily8-name">${c.name}</div>
+        <div class="daily8-contact">${contact}${bdStr}${lastStr}</div>
+        ${c.badges.length ? '<div class="daily8-badges">' + c.badges.map(b => `<span class="daily8-badge">${b}</span>`).join('') + '</div>' : ''}
+        ${c.notes ? '<div class="daily8-contact" style="color:var(--text-tertiary);font-size:10px;">' + c.notes.substring(0,60) + '…</div>' : ''}
+        <button class="daily8-open-btn" onclick="openModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">Open ›</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('daily8Grid').innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Unavailable</span>';
+  }
+}
+loadDaily8();
+
 // ── TASKS ─────────────────────────────────────────────
 let tasks = JSON.parse(localStorage.getItem('gd_tasks') || '[]');
 if (tasks.length === 0) {
@@ -656,6 +983,7 @@ if (tasks.length === 0) {
     { id: 3, text: "Follow up Brewtech due diligence docs", done: false, priority: "med" },
     { id: 4, text: "Summertime Bev — supplier meeting prep", done: false, priority: "med" },
     { id: 5, text: "Personal brand — draft 3 LinkedIn topics", done: false, priority: "low" },
+    { id: 6, text: "HNWI Audience Strategy — WhatsApp Inner Circle, referral partnerships & advisory", done: false, priority: "high" },
   ];
   saveTasks();
 }
@@ -709,8 +1037,7 @@ document.getElementById('taskInput').addEventListener('keydown', e => {
 renderTasks();
 
 // ── iCLOUD CALENDAR ──────────────────────────────────
-const ICS_URL = 'https://p154-caldav.icloud.com/published/2/MTAyNzgxMzE5NjEwMjc4MeQpRiWg8s91ZttUzCscn0LVukQGO_XhrS79WurbTSRN';
-const PROXY   = 'https://api.allorigins.win/get?url=';
+// Calendar is fetched via our own server proxy at /calendar (avoids CORS issues)
 
 function parseICS(text) {
   const events = [];
@@ -729,10 +1056,15 @@ function parseICS(text) {
     if (!summary || !startStr) continue;
 
     const parseDate = (s) => {
-      // All-day: 20260704  or datetime: 20260704T100000
+      // All-day: 20260704
       if (s.length === 8) return new Date(
         parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, parseInt(s.slice(6,8))
       );
+      // UTC datetime (ends in Z): parse as ISO so browser converts UTC → SAST
+      if (s.endsWith('Z')) {
+        return new Date(`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(9,11)}:${s.slice(11,13)}:00Z`);
+      }
+      // Local datetime with TZID=Africa/Johannesburg: treat as browser local time
       return new Date(
         parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, parseInt(s.slice(6,8)),
         parseInt(s.slice(9,11)), parseInt(s.slice(11,13)), 0
@@ -793,9 +1125,10 @@ function renderCalendar(events) {
 
 async function fetchCalendar() {
   try {
-    const res  = await fetch(PROXY + encodeURIComponent(ICS_URL));
-    const json = await res.json();
-    const events = parseICS(json.contents);
+    // Fetch from our own server-side proxy — no CORS issues
+    const res    = await fetchWithTimeout('/calendar', {}, 15000);
+    const text   = await res.text();
+    const events = parseICS(text);
     renderCalendar(events);
   } catch(e) {
     document.getElementById('eventList').innerHTML =
@@ -815,6 +1148,409 @@ function updateLastUpdated() {
 updateLastUpdated();
 setInterval(() => { fetchWeather(); updateLastUpdated(); }, 600000); // refresh every 10 min
 
+</script>
+
+<!-- ══════════════════════════════════════════════ -->
+<!--  CONTACT MODAL                                 -->
+<!-- ══════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════ -->
+<!--  AD-HOC LOG CONTACT MODAL                      -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="adhocModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAdhocModal()">✕</button>
+    <div class="modal-name" style="font-size:16px;">📝 Log a Contact</div>
+    <div class="modal-meta" style="margin-bottom:14px;">Search for a client and record what happened.</div>
+
+    <!-- Step 1: search -->
+    <div id="adhocStep1">
+      <div class="modal-label">Search client name or email</div>
+      <input class="modal-input" id="adhocSearch" placeholder="e.g. John Smith or john@…" oninput="debounceAdhocSearch(this.value)" autocomplete="off" />
+      <div class="search-results" id="adhocResults" style="margin-top:6px;"></div>
+    </div>
+
+    <!-- Step 2: selected + log form -->
+    <div id="adhocStep2" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-primary);" id="adhocSelectedName">—</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="adhocSelectedMeta">—</div>
+        </div>
+        <button onclick="resetAdhocSearch()" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer;">✕ Change</button>
+      </div>
+      <div class="modal-label">Contact Type</div>
+      <select class="modal-input" id="adhocType">
+        <option value="message">WhatsApp / Message</option>
+        <option value="call">Phone Call</option>
+        <option value="email">Email</option>
+        <option value="meeting">Meeting</option>
+        <option value="note">Note</option>
+      </select>
+      <div class="modal-label">What happened? (summary)</div>
+      <textarea class="modal-textarea" id="adhocSummary" placeholder="e.g. Reconnected, interested in upgrade. Follow up next week." style="min-height:90px;"></textarea>
+      <div class="modal-label">Outcome / Next Step</div>
+      <input class="modal-input" id="adhocSubject" placeholder="e.g. Follow up call next Tuesday" />
+      <div class="modal-actions">
+        <button class="modal-btn ghost"   onclick="closeAdhocModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="submitAdhocLog()">✓ Save to CRM</button>
+      </div>
+      <div class="modal-success" id="adhocSuccess">✓ Logged to CRM</div>
+      <div class="modal-error"   id="adhocError">⚠ Could not save — try again</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-name" id="modalName">—</div>
+    <div class="modal-meta" id="modalMeta">—</div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('message',this)">✉ Message</button>
+      <button class="modal-tab"        onclick="switchTab('log',this)">📝 Log Contact</button>
+      <button class="modal-tab"        onclick="switchTab('connect',this)">🔗 Connect</button>
+    </div>
+
+    <!-- TAB 1: Message Template + WhatsApp -->
+    <div class="modal-panel active" id="tab-message">
+      <div class="modal-label">Personalised Opener</div>
+      <textarea class="modal-textarea" id="msgTemplate" placeholder="Loading template…"></textarea>
+      <div id="msgVehicle" style="font-size:11px;color:var(--text-tertiary);margin-top:4px;"></div>
+      <div class="modal-actions">
+        <button class="modal-btn ghost"  onclick="copyTemplate()">📋 Copy</button>
+        <button class="modal-btn green"  id="waBtn" onclick="openWhatsApp()">💬 WhatsApp</button>
+        <button class="modal-btn primary" onclick="openWhatsAppEmail()">✉ Email Draft</button>
+      </div>
+      <div class="modal-success" id="copySuccess">✓ Copied to clipboard</div>
+    </div>
+
+    <!-- TAB 2: Log Contact Outcome -->
+    <div class="modal-panel" id="tab-log">
+      <div class="modal-label">Contact Type</div>
+      <select class="modal-input" id="logType">
+        <option value="message">WhatsApp / Message</option>
+        <option value="call">Phone Call</option>
+        <option value="email">Email</option>
+        <option value="meeting">Meeting</option>
+        <option value="note">Note</option>
+      </select>
+      <div class="modal-label">What happened? (summary)</div>
+      <textarea class="modal-textarea" id="logSummary" placeholder="e.g. Reconnected after 2 years. Interested in a new Aston Martin. Follow up next week." style="min-height:90px;"></textarea>
+      <div class="modal-label">Outcome / Next Step</div>
+      <input class="modal-input" id="logSubject" placeholder="e.g. Follow up call next Tuesday" />
+      <div class="modal-actions">
+        <button class="modal-btn ghost"   onclick="closeModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="submitLog()">✓ Save to CRM</button>
+      </div>
+      <div class="modal-success" id="logSuccess">✓ Logged to Supabase</div>
+      <div class="modal-error"   id="logError">⚠ Could not save — try again</div>
+    </div>
+
+    <!-- TAB 3: Connect Two People -->
+    <div class="modal-panel" id="tab-connect">
+      <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px;">
+        Connect <strong id="connectFromName">this person</strong> with someone else in your network.
+      </p>
+      <div class="modal-label">Search for the second person</div>
+      <input class="modal-input" id="connectSearch" placeholder="Name or email…" oninput="debounceSearch(this.value)" />
+      <div class="search-results" id="connectResults"></div>
+      <div class="modal-label" style="margin-top:12px;">Connecting with</div>
+      <div class="connect-selected" id="connectTarget">— search above and select —</div>
+      <div class="modal-label">Reason for connection</div>
+      <input class="modal-input" id="connectReason" placeholder="e.g. Both Aston Martin owners, JHB property interests…" />
+      <div class="modal-label">Expected outcome</div>
+      <input class="modal-input" id="connectOutcome" placeholder="e.g. Introduction call, deal, referral…" />
+      <div class="modal-actions">
+        <button class="modal-btn ghost"   onclick="closeModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="submitConnection()">🔗 Log Connection</button>
+      </div>
+      <div class="modal-success" id="connectSuccess">✓ Connection logged on both profiles</div>
+      <div class="modal-error"   id="connectError">⚠ Could not save — try again</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ MODAL STATE ══════════════════════════════════════
+let _modalContact  = null;   // full contact object from daily8
+let _connectTarget = null;   // {id, name, email, entity_id}
+
+function openModal(contact) {
+  _modalContact = contact;
+  _connectTarget = null;
+
+  // Header
+  document.getElementById('modalName').textContent = contact.name;
+  const metaParts = [contact.pipeline, contact.email, contact.cell].filter(Boolean);
+  document.getElementById('modalMeta').textContent = metaParts.join(' · ');
+  document.getElementById('connectFromName').textContent = contact.name;
+
+  // Reset tabs
+  switchTab('message', document.querySelector('.modal-tab'));
+
+  // Reset state
+  document.getElementById('msgTemplate').value = 'Loading…';
+  document.getElementById('msgVehicle').textContent = '';
+  document.getElementById('logSummary').value = '';
+  document.getElementById('logSubject').value = '';
+  document.getElementById('connectSearch').value = '';
+  document.getElementById('connectResults').innerHTML = '';
+  document.getElementById('connectTarget').textContent = '— search above and select —';
+  ['copySuccess','logSuccess','logError','connectSuccess','connectError'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  // WhatsApp button — only show if cell exists
+  const waBtn = document.getElementById('waBtn');
+  waBtn.style.display = contact.cell ? '' : 'none';
+
+  // Show modal
+  document.getElementById('contactModal').classList.add('open');
+
+  // Fetch template async
+  fetch('/message-template', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(contact),
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('msgTemplate').value = d.template || '';
+    if (d.vehicle) {
+      document.getElementById('msgVehicle').textContent =
+        '🚗 ' + (d.vehicle.brand || '') + ' ' + (d.vehicle.model || '');
+    }
+  })
+  .catch(() => {
+    document.getElementById('msgTemplate').value = 'Good morning ' + contact.name.split(' ')[0] + ',\n\nI hope this message finds you well. I wanted to reach out personally to reconnect.\n\nPlease do not hesitate to get in touch anytime.\n\nBest regards,\nGrant';
+  });
+}
+
+function closeModal() {
+  document.getElementById('contactModal').classList.remove('open');
+  _modalContact = null;
+}
+
+// Close on overlay click
+document.getElementById('contactModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-panel').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.querySelectorAll('.modal-tab')[['message','log','connect'].indexOf(name)].classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Feature 1: Copy Template ──────────────────────────
+function copyTemplate() {
+  const txt = document.getElementById('msgTemplate').value;
+  navigator.clipboard.writeText(txt).then(() => {
+    const el = document.getElementById('copySuccess');
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 2500);
+  });
+}
+
+// ── Feature 1: WhatsApp Deep Link ─────────────────────
+function openWhatsApp() {
+  if (!_modalContact || !_modalContact.cell) return;
+  const cell = _modalContact.cell.replace(/\D/g,'');
+  const intl = cell.startsWith('0') ? '27' + cell.slice(1) : cell;
+  const msg  = encodeURIComponent(document.getElementById('msgTemplate').value);
+  window.open('https://wa.me/' + intl + '?text=' + msg, '_blank');
+}
+
+function openWhatsAppEmail() {
+  if (!_modalContact) return;
+  const body  = encodeURIComponent(document.getElementById('msgTemplate').value);
+  const email = _modalContact.email || '';
+  window.open('mailto:' + email + '?body=' + body, '_blank');
+}
+
+// ── Feature 2: Log Contact ────────────────────────────
+async function submitLog() {
+  if (!_modalContact) return;
+  const summary = document.getElementById('logSummary').value.trim();
+  if (!summary) { document.getElementById('logError').textContent = '⚠ Please add a summary'; document.getElementById('logError').style.display = 'block'; return; }
+
+  try {
+    const r = await fetch('/log-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id: _modalContact.id,
+        entity_id:   _modalContact.entity_id || '7cg',
+        type:        document.getElementById('logType').value,
+        subject:     document.getElementById('logSubject').value || 'Outreach',
+        summary:     summary,
+        message:     summary,
+      }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('logSuccess').style.display = 'block';
+      document.getElementById('logError').style.display   = 'none';
+      // Tick off this contact on the daily8 list
+      if (_modalContact.name) toggleDaily8Done(_modalContact.name);
+      setTimeout(closeModal, 1800);
+    } else {
+      throw new Error('not ok');
+    }
+  } catch(e) {
+    document.getElementById('logError').textContent = '⚠ Could not save — try again';
+    document.getElementById('logError').style.display = 'block';
+  }
+}
+
+// ── Feature 3: Connect ────────────────────────────────
+let _searchTimer = null;
+function debounceSearch(q) {
+  clearTimeout(_searchTimer);
+  if (q.length < 2) { document.getElementById('connectResults').innerHTML = ''; return; }
+  _searchTimer = setTimeout(() => runSearch(q), 350);
+}
+
+async function runSearch(q) {
+  const res = await fetch('/search-customers?q=' + encodeURIComponent(q));
+  const data = await res.json();
+  document.getElementById('connectResults').innerHTML = data.map(c =>
+    `<div class="search-result-item" onclick="selectConnect(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      <div><div class="sr-name">${c.name}</div><div class="sr-meta">${c.email || c.cell || ''} · ${c.pipeline || ''}</div></div>
+      <div style="font-size:18px;color:#0071e3;">+</div>
+    </div>`
+  ).join('') || '<div style="font-size:12px;color:var(--text-tertiary);padding:6px 0;">No results</div>';
+}
+
+function selectConnect(c) {
+  _connectTarget = c;
+  document.getElementById('connectTarget').textContent = c.name + (c.email ? ' · ' + c.email : '');
+  document.getElementById('connectResults').innerHTML = '';
+  document.getElementById('connectSearch').value = '';
+}
+
+async function submitConnection() {
+  if (!_modalContact || !_connectTarget) {
+    document.getElementById('connectError').textContent = '⚠ Select a second person first';
+    document.getElementById('connectError').style.display = 'block';
+    return;
+  }
+  try {
+    const r = await fetch('/log-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from_id:    _modalContact.id,
+        from_name:  _modalContact.name,
+        to_id:      _connectTarget.id,
+        to_name:    _connectTarget.name,
+        entity_id:  _modalContact.entity_id || '7cg',
+        reason:     document.getElementById('connectReason').value,
+        outcome:    document.getElementById('connectOutcome').value,
+      }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('connectSuccess').style.display = 'block';
+      document.getElementById('connectError').style.display   = 'none';
+      setTimeout(closeModal, 1800);
+    } else { throw new Error(); }
+  } catch(e) {
+    document.getElementById('connectError').textContent = '⚠ Could not save — try again';
+    document.getElementById('connectError').style.display = 'block';
+  }
+}
+</script>
+<script>
+// ══ AD-HOC LOG CONTACT ══════════════════════════════
+let _adhocContact = null;
+let _adhocTimer   = null;
+
+function openAdhocModal() {
+  resetAdhocSearch();
+  document.getElementById('adhocModal').classList.add('open');
+  setTimeout(() => document.getElementById('adhocSearch').focus(), 100);
+}
+
+function closeAdhocModal() {
+  document.getElementById('adhocModal').classList.remove('open');
+  resetAdhocSearch();
+}
+
+function resetAdhocSearch() {
+  _adhocContact = null;
+  document.getElementById('adhocSearch').value  = '';
+  document.getElementById('adhocResults').innerHTML = '';
+  document.getElementById('adhocSummary').value = '';
+  document.getElementById('adhocSubject').value = '';
+  document.getElementById('adhocStep1').style.display = '';
+  document.getElementById('adhocStep2').style.display = 'none';
+  ['adhocSuccess','adhocError'].forEach(id => document.getElementById(id).style.display = 'none');
+}
+
+function debounceAdhocSearch(val) {
+  clearTimeout(_adhocTimer);
+  if (val.length < 2) { document.getElementById('adhocResults').innerHTML = ''; return; }
+  _adhocTimer = setTimeout(() => runAdhocSearch(val), 300);
+}
+
+async function runAdhocSearch(q) {
+  const res = document.getElementById('adhocResults');
+  res.innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Searching…</span>';
+  try {
+    const r    = await fetch('/search-customers?q=' + encodeURIComponent(q));
+    const data = await r.json();
+    if (!data.length) { res.innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">No matches found.</span>'; return; }
+    res.innerHTML = data.map(c => `
+      <div class="search-result-item" onclick="selectAdhocContact(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        <div style="font-weight:600;font-size:13px;">${c.name || '—'}</div>
+        <div style="font-size:11px;color:var(--text-secondary);">${[c.pipeline, c.email, c.cell].filter(Boolean).join(' · ')}</div>
+      </div>`).join('');
+  } catch(e) {
+    res.innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Search failed — try again.</span>';
+  }
+}
+
+function selectAdhocContact(c) {
+  _adhocContact = c;
+  document.getElementById('adhocSelectedName').textContent = c.name || '—';
+  document.getElementById('adhocSelectedMeta').textContent = [c.pipeline, c.email, c.cell].filter(Boolean).join(' · ');
+  document.getElementById('adhocStep1').style.display = 'none';
+  document.getElementById('adhocStep2').style.display = '';
+}
+
+async function submitAdhocLog() {
+  if (!_adhocContact) return;
+  const summary = document.getElementById('adhocSummary').value.trim();
+  if (!summary) { document.getElementById('adhocError').textContent = '⚠ Please add a summary.'; document.getElementById('adhocError').style.display = 'block'; return; }
+  try {
+    const r = await fetch('/log-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id:  _adhocContact.id,
+        entity_id:    _adhocContact.entity_id || '7cg',
+        type:         document.getElementById('adhocType').value,
+        direction:    'outbound',
+        subject:      document.getElementById('adhocSubject').value.trim(),
+        summary,
+        occurred_at:  new Date().toISOString(),
+      }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('adhocSuccess').style.display = 'block';
+      document.getElementById('adhocError').style.display   = 'none';
+      setTimeout(closeAdhocModal, 1800);
+    } else { throw new Error(); }
+  } catch(e) {
+    document.getElementById('adhocError').textContent = '⚠ Could not save — try again';
+    document.getElementById('adhocError').style.display = 'block';
+  }
+}
 </script>
 </body>
 </html>

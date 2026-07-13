@@ -520,7 +520,10 @@
   <div class="card daily8-card">
     <div class="daily8-header-row">
       <div class="card-label" style="margin-bottom:0;">📋 Today's 8 — Reach Out</div>
-      <div class="daily8-progress" id="daily8Progress">0 / 8 contacted</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="openAdhocModal()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text-secondary);cursor:pointer;">＋ Log Contact</button>
+        <div class="daily8-progress" id="daily8Progress">0 / 8 contacted</div>
+      </div>
     </div>
     <div class="daily8-grid" id="daily8Grid"><span class="spinner"></span></div>
   </div>
@@ -1150,6 +1153,53 @@ setInterval(() => { fetchWeather(); updateLastUpdated(); }, 600000); // refresh 
 <!-- ══════════════════════════════════════════════ -->
 <!--  CONTACT MODAL                                 -->
 <!-- ══════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════ -->
+<!--  AD-HOC LOG CONTACT MODAL                      -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="adhocModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAdhocModal()">✕</button>
+    <div class="modal-name" style="font-size:16px;">📝 Log a Contact</div>
+    <div class="modal-meta" style="margin-bottom:14px;">Search for a client and record what happened.</div>
+
+    <!-- Step 1: search -->
+    <div id="adhocStep1">
+      <div class="modal-label">Search client name or email</div>
+      <input class="modal-input" id="adhocSearch" placeholder="e.g. John Smith or john@…" oninput="debounceAdhocSearch(this.value)" autocomplete="off" />
+      <div class="search-results" id="adhocResults" style="margin-top:6px;"></div>
+    </div>
+
+    <!-- Step 2: selected + log form -->
+    <div id="adhocStep2" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div style="font-size:15px;font-weight:600;color:var(--text-primary);" id="adhocSelectedName">—</div>
+          <div style="font-size:11px;color:var(--text-secondary);" id="adhocSelectedMeta">—</div>
+        </div>
+        <button onclick="resetAdhocSearch()" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer;">✕ Change</button>
+      </div>
+      <div class="modal-label">Contact Type</div>
+      <select class="modal-input" id="adhocType">
+        <option value="message">WhatsApp / Message</option>
+        <option value="call">Phone Call</option>
+        <option value="email">Email</option>
+        <option value="meeting">Meeting</option>
+        <option value="note">Note</option>
+      </select>
+      <div class="modal-label">What happened? (summary)</div>
+      <textarea class="modal-textarea" id="adhocSummary" placeholder="e.g. Reconnected, interested in upgrade. Follow up next week." style="min-height:90px;"></textarea>
+      <div class="modal-label">Outcome / Next Step</div>
+      <input class="modal-input" id="adhocSubject" placeholder="e.g. Follow up call next Tuesday" />
+      <div class="modal-actions">
+        <button class="modal-btn ghost"   onclick="closeAdhocModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="submitAdhocLog()">✓ Save to CRM</button>
+      </div>
+      <div class="modal-success" id="adhocSuccess">✓ Logged to CRM</div>
+      <div class="modal-error"   id="adhocError">⚠ Could not save — try again</div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="contactModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
@@ -1411,6 +1461,94 @@ async function submitConnection() {
   } catch(e) {
     document.getElementById('connectError').textContent = '⚠ Could not save — try again';
     document.getElementById('connectError').style.display = 'block';
+  }
+}
+</script>
+<script>
+// ══ AD-HOC LOG CONTACT ══════════════════════════════
+let _adhocContact = null;
+let _adhocTimer   = null;
+
+function openAdhocModal() {
+  resetAdhocSearch();
+  document.getElementById('adhocModal').classList.add('open');
+  setTimeout(() => document.getElementById('adhocSearch').focus(), 100);
+}
+
+function closeAdhocModal() {
+  document.getElementById('adhocModal').classList.remove('open');
+  resetAdhocSearch();
+}
+
+function resetAdhocSearch() {
+  _adhocContact = null;
+  document.getElementById('adhocSearch').value  = '';
+  document.getElementById('adhocResults').innerHTML = '';
+  document.getElementById('adhocSummary').value = '';
+  document.getElementById('adhocSubject').value = '';
+  document.getElementById('adhocStep1').style.display = '';
+  document.getElementById('adhocStep2').style.display = 'none';
+  ['adhocSuccess','adhocError'].forEach(id => document.getElementById(id).style.display = 'none');
+}
+
+function debounceAdhocSearch(val) {
+  clearTimeout(_adhocTimer);
+  if (val.length < 2) { document.getElementById('adhocResults').innerHTML = ''; return; }
+  _adhocTimer = setTimeout(() => runAdhocSearch(val), 300);
+}
+
+async function runAdhocSearch(q) {
+  const res = document.getElementById('adhocResults');
+  res.innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Searching…</span>';
+  try {
+    const r    = await fetch('/search-customers?q=' + encodeURIComponent(q));
+    const data = await r.json();
+    if (!data.length) { res.innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">No matches found.</span>'; return; }
+    res.innerHTML = data.map(c => `
+      <div class="search-result-item" onclick="selectAdhocContact(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        <div style="font-weight:600;font-size:13px;">${c.name || '—'}</div>
+        <div style="font-size:11px;color:var(--text-secondary);">${[c.pipeline, c.email, c.cell].filter(Boolean).join(' · ')}</div>
+      </div>`).join('');
+  } catch(e) {
+    res.innerHTML = '<span style="font-size:12px;color:var(--text-tertiary);">Search failed — try again.</span>';
+  }
+}
+
+function selectAdhocContact(c) {
+  _adhocContact = c;
+  document.getElementById('adhocSelectedName').textContent = c.name || '—';
+  document.getElementById('adhocSelectedMeta').textContent = [c.pipeline, c.email, c.cell].filter(Boolean).join(' · ');
+  document.getElementById('adhocStep1').style.display = 'none';
+  document.getElementById('adhocStep2').style.display = '';
+}
+
+async function submitAdhocLog() {
+  if (!_adhocContact) return;
+  const summary = document.getElementById('adhocSummary').value.trim();
+  if (!summary) { document.getElementById('adhocError').textContent = '⚠ Please add a summary.'; document.getElementById('adhocError').style.display = 'block'; return; }
+  try {
+    const r = await fetch('/log-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id:  _adhocContact.id,
+        entity_id:    _adhocContact.entity_id || '7cg',
+        type:         document.getElementById('adhocType').value,
+        direction:    'outbound',
+        subject:      document.getElementById('adhocSubject').value.trim(),
+        summary,
+        occurred_at:  new Date().toISOString(),
+      }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      document.getElementById('adhocSuccess').style.display = 'block';
+      document.getElementById('adhocError').style.display   = 'none';
+      setTimeout(closeAdhocModal, 1800);
+    } else { throw new Error(); }
+  } catch(e) {
+    document.getElementById('adhocError').textContent = '⚠ Could not save — try again';
+    document.getElementById('adhocError').style.display = 'block';
   }
 }
 </script>
