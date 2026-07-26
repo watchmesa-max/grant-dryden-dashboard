@@ -182,7 +182,7 @@ async function fetchDailyContacts() {
     const m2 = m1 === 12 ? 1 : m1 + 1;
     const [bdayRaw, poolRaw] = await Promise.all([
       fetchSupabase(`/birthday_calendar?select=first_name,surname,email,cell,birthdate&month_num=in.(${m1},${m2})&limit=200`),
-      fetchSupabase('/customer_card?select=id,first_name,surname,email,cell,pipeline_stage,last_comm_at,comms_count,notes,tags,status,birthdate&or=(email.not.is.null,cell.not.is.null)&limit=500'),
+      fetchSupabase('/customer_card?select=id,first_name,surname,email,cell,pipeline_stage,last_comm_at,comms_count,notes,tags,status,birthdate&or=(email.not.is.null,cell.not.is.null)&limit=1000'),
     ]);
 
     const bdays = Array.isArray(bdayRaw.json) ? bdayRaw.json : [];
@@ -210,6 +210,7 @@ async function fetchDailyContacts() {
 
       // Owner / premium pipeline stage
       if (c.pipeline_stage === 'Owner') { score += 15; badges.push('🚗 Owner'); }
+      if (c.pipeline_stage === 'Prospect' || c.pipeline_stage === 'Warm Prospect') { score += 20; badges.push('🔥 Hot prospect'); }
 
       // Birthday this month
       const bd = bdayByEmail[c.email ? c.email.toLowerCase() : ''] || c.birthdate;

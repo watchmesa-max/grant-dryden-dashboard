@@ -516,11 +516,18 @@
     <div class="verse-ref" id="verseRef"></div>
   </div>
 
+  <!-- DAILY BRIEF -->
+  <div class="card" style="grid-column:span 12;background:linear-gradient(135deg,rgba(0,113,227,0.06),rgba(255,255,255,0));border:1px solid rgba(0,113,227,0.18);">
+    <div class="card-label" style="margin-bottom:8px;">🌅 Daily Brief — What matters today</div>
+    <div id="dailyBrief" style="font-size:13px;color:var(--text-primary);line-height:1.7;"><span class="spinner"></span></div>
+  </div>
+
   <!-- DAILY 8 — Contact List -->
   <div class="card daily8-card">
     <div class="daily8-header-row">
       <div class="card-label" style="margin-bottom:0;">📋 Today's 8 — Reach Out</div>
       <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="refreshContacts()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text-secondary);cursor:pointer;">🔄 Refresh</button>
         <button onclick="openAdhocModal()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text-secondary);cursor:pointer;">＋ Log Contact</button>
         <div class="daily8-progress" id="daily8Progress">0 / 8 contacted</div>
       </div>
@@ -609,7 +616,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#0071e3; color:#fff; font-size:12px;">GD</div>
         <div>
-          <div class="family-name">Grant <span style="font-size:11px;color:var(--text-tertiary);">Age 37</span></div>
+          <div class="family-name">Grant <span class="dyn-age" data-dob="1988-07-18" style="font-size:11px;color:var(--text-tertiary);">Age 38</span></div>
           <div class="family-status">Self Employed</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 18 July 1988</div>
         </div>
@@ -617,7 +624,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#fde8f5; color:#c0399a;">G</div>
         <div>
-          <div class="family-name">Gabi <span style="font-size:11px;color:var(--text-tertiary);">Age 37</span></div>
+          <div class="family-name">Gabi <span class="dyn-age" data-dob="1988-11-03" style="font-size:11px;color:var(--text-tertiary);">Age 37</span></div>
           <div class="family-status">Acino — Medical Rep</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 3 November 1988</div>
         </div>
@@ -625,7 +632,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#e8f1fc; color:#0071e3;">Gr</div>
         <div>
-          <div class="family-name">Grayson <span style="font-size:11px;color:var(--text-tertiary);">Age 4</span></div>
+          <div class="family-name">Grayson <span class="dyn-age" data-dob="2020-10-02" style="font-size:11px;color:var(--text-tertiary);">Age 5</span></div>
           <div class="family-status">School — Grade R</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 2 October 2020</div>
         </div>
@@ -633,7 +640,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#e9f8ed; color:#34c759;">Ki</div>
         <div>
-          <div class="family-name">Kingsley <span style="font-size:11px;color:var(--text-tertiary);">Age 3</span></div>
+          <div class="family-name">Kingsley <span class="dyn-age" data-dob="2022-04-04" style="font-size:11px;color:var(--text-tertiary);">Age 4</span></div>
           <div class="family-status">School — Grade 00</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 4 April 2022</div>
         </div>
@@ -641,7 +648,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#fff4e0; color:#ff9f0a;">Da</div>
         <div>
-          <div class="family-name">Dakota <span style="font-size:11px;color:var(--text-tertiary);">Age 0</span></div>
+          <div class="family-name">Dakota <span class="dyn-age" data-dob="2025-04-16" style="font-size:11px;color:var(--text-tertiary);">Age 1</span></div>
           <div class="family-status">Home with Gabi</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 16 April 2025</div>
         </div>
@@ -650,7 +657,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#f0f0f5; color:#6e6e73; font-size:18px;">🐾</div>
         <div>
-          <div class="family-name">Luis <span style="font-size:11px;color:var(--text-tertiary);">Age 8</span></div>
+          <div class="family-name">Luis <span class="dyn-age" data-dob="2017-12-02" style="font-size:11px;color:var(--text-tertiary);">Age 8</span></div>
           <div class="family-status">French Bulldog</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 2 December 2017</div>
         </div>
@@ -658,7 +665,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#f0f0f5; color:#6e6e73; font-size:18px;">🐾</div>
         <div>
-          <div class="family-name">Enzo <span style="font-size:11px;color:var(--text-tertiary);">Age 2</span></div>
+          <div class="family-name">Enzo <span class="dyn-age" data-dob="2023-10-22" style="font-size:11px;color:var(--text-tertiary);">Age 2</span></div>
           <div class="family-status">French Bulldog</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 22 October 2023</div>
         </div>
@@ -667,7 +674,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#f5f5ea; color:#8a8a3a;">M</div>
         <div>
-          <div class="family-name">Melody <span style="font-size:11px;color:var(--text-tertiary);">Age 53</span></div>
+          <div class="family-name">Melody <span class="dyn-age" data-dob="1973-02-20" style="font-size:11px;color:var(--text-tertiary);">Age 53</span></div>
           <div class="family-status">Helper — Full time</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 20 February 1973</div>
         </div>
@@ -675,7 +682,7 @@
       <div class="family-item">
         <div class="family-avatar" style="background:#f5f5ea; color:#8a8a3a;">S</div>
         <div>
-          <div class="family-name">Sisa <span style="font-size:11px;color:var(--text-tertiary);">Age 31</span></div>
+          <div class="family-name">Sisa <span class="dyn-age" data-dob="1994-12-05" style="font-size:11px;color:var(--text-tertiary);">Age 31</span></div>
           <div class="family-status">Helper — Mon / Wed / Fri</div>
           <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;">🎂 5 December 1994</div>
         </div>
@@ -689,6 +696,23 @@
 
 <!-- ===================== SCRIPTS ===================== -->
 <script>
+
+// ── DYNAMIC AGES ───────────────────────────────────────
+function calcAge(dobStr) {
+  const dob = new Date(dobStr);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+}
+function updateAllAges() {
+  document.querySelectorAll('.dyn-age[data-dob]').forEach(el => {
+    const age = calcAge(el.dataset.dob);
+    el.textContent = 'Age ' + age;
+  });
+}
+updateAllAges();
 
 // ── CLOCK ──────────────────────────────────────────────
 function updateClock() {
@@ -847,8 +871,9 @@ setInterval(fetchNews, 1800000); // refresh every 30 min
 
 // ── VENTURES ──────────────────────────────────────────
 const ventures = [
-  { name: "BYD / Denza SA — Interview", pct: 75, color: "#0071e3" },
-  { name: "ONE:1 Automotive Preservation", pct: 40, color: "#af52de" },
+  { name: "Dytor × Kingfisher", pct: 35, color: "#0071e3" },
+  { name: "BYD / Denza SA — Interview", pct: 75, color: "#af52de" },
+  { name: "ONE:1 Automotive Preservation", pct: 40, color: "#34c759" },
   { name: "Summertime Beverage Co.", pct: 20, color: "#ff9f0a" },
   { name: "Brewtech Acquisition", pct: 15, color: "#34c759" },
   { name: "Property Brokerage (JdP)", pct: 30, color: "#ff6b6b" },
@@ -973,6 +998,70 @@ async function loadDaily8() {
   }
 }
 loadDaily8();
+
+// ── DAILY BRIEF ────────────────────────────────────────
+async function loadDailyBrief() {
+  const el = document.getElementById('dailyBrief');
+  try {
+    const now = new Date();
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const dayName = days[now.getDay()];
+    const dateStr = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+
+    // Fetch contacts and CRM stats in parallel to build the brief
+    const [contactsRes, statsRes] = await Promise.all([
+      fetchWithTimeout('/daily-contacts', {}, 15000),
+      fetchWithTimeout('/supabase-stats', {}, 15000),
+    ]);
+    const contactsData = await contactsRes.json();
+    const stats = await statsRes.json();
+
+    const contacts = contactsData && contactsData.contacts ? contactsData.contacts : [];
+    const bdays = contacts.filter(c => c.badges && c.badges.some(b => b.includes('Birthday')));
+    const neverContacted = contacts.filter(c => c.badges && c.badges.some(b => b.includes('Never contacted')));
+    const stale = contacts.filter(c => c.badges && c.badges.some(b => b.includes('d no contact')));
+
+    let lines = [];
+    lines.push(`<b>Good ${now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening'}, Grant.</b> It's ${dayName}, ${dateStr}.`);
+
+    if (bdays.length) {
+      lines.push(`🎂 <b>${bdays.length} birthday${bdays.length > 1 ? 's' : ''} to celebrate today/this month:</b> ${bdays.map(c => c.name).join(', ')} — send a personal message today.`);
+    }
+    if (neverContacted.length) {
+      lines.push(`🆕 <b>${neverContacted.length} customer${neverContacted.length > 1 ? 's' : ''} you've never contacted</b> made today's list — now is the perfect time for a warm first reach-out.`);
+    }
+    if (stale.length) {
+      lines.push(`⏰ <b>${stale.length} lapsed relationship${stale.length > 1 ? 's' : ''}</b> on your radar — a quick catch-up can re-open doors.`);
+    }
+
+    const prospects = stats.prospects || 0;
+    const customers = stats.customers || 0;
+    if (prospects > 0) {
+      lines.push(`📊 You have <b>${prospects} active prospects</b> in your CRM pipeline across <b>${customers} customers</b>. Keep momentum.`);
+    }
+
+    lines.push(`<span style="color:var(--text-secondary);font-size:11px;">💡 Focus: connect with 8 people today — each conversation is a door you're opening.</span>`);
+
+    el.innerHTML = lines.join('<br>');
+  } catch(e) {
+    el.textContent = 'Daily brief unavailable — tap Refresh to retry.';
+  }
+}
+loadDailyBrief();
+
+// ── REFRESH CONTACTS ───────────────────────────────────
+async function refreshContacts() {
+  const btn = document.querySelector('button[onclick="refreshContacts()"]');
+  if (btn) { btn.textContent = '⏳ Refreshing…'; btn.disabled = true; }
+  try {
+    await fetch('/refresh-cache');
+    document.getElementById('daily8Grid').innerHTML = '<span class="spinner"></span>';
+    await loadDaily8();
+    await loadDailyBrief();
+  } catch(e) { /* silent */ }
+  if (btn) { btn.textContent = '🔄 Refresh'; btn.disabled = false; }
+}
 
 // ── TASKS ─────────────────────────────────────────────
 let tasks = JSON.parse(localStorage.getItem('gd_tasks') || '[]');
