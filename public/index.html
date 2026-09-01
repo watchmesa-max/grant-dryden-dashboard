@@ -1304,11 +1304,14 @@ setInterval(() => { fetchWeather(); updateLastUpdated(); }, 600000); // refresh 
     <!-- TAB 1: Message Template + WhatsApp -->
     <div class="modal-panel active" id="tab-message">
       <div class="modal-label">Template</div>
-      <select class="modal-input" id="msgTemplatePicker" onchange="applyTemplateChoice()" style="margin-bottom:10px;">
+      <select class="modal-input" id="msgTemplatePicker" onchange="applyTemplateChoice()" style="margin-bottom:6px;">
         <option value="relationship">🤝 Relationship — reconnect, no sell</option>
         <option value="vehicle">🚗 Cold vehicle — reference their car</option>
         <option value="birthday">🎂 Birthday — warm greeting</option>
       </select>
+      <div style="text-align:right;margin-bottom:8px;">
+        <a href="#" onclick="openTemplateEditor(event)" style="font-size:11px;color:var(--accent,#0071e3);text-decoration:none;">✏️ Edit templates</a>
+      </div>
       <div class="modal-label">Personalised Opener</div>
       <textarea class="modal-textarea" id="msgTemplate" placeholder="Loading template…"></textarea>
       <div id="msgVehicle" style="font-size:11px;color:var(--text-tertiary);margin-top:4px;"></div>
@@ -1366,6 +1369,31 @@ setInterval(() => { fetchWeather(); updateLastUpdated(); }, 600000); // refresh 
   </div>
 </div>
 
+<!-- ══ TEMPLATE EDITOR MODAL ══ -->
+<div class="modal-overlay" id="templateEditorModal">
+  <div class="modal">
+    <div class="modal-name">✏️ Edit WhatsApp Templates</div>
+    <div class="modal-meta">Use <b>{name}</b> for the contact's first name and <b>{car}</b> for their vehicle. Changes apply to everyone.</div>
+
+    <div class="modal-label" style="margin-top:12px;">🤝 Relationship template</div>
+    <textarea class="modal-textarea" id="edit-relationship" style="min-height:120px;"></textarea>
+
+    <div class="modal-label" style="margin-top:10px;">🚗 Cold vehicle template</div>
+    <textarea class="modal-textarea" id="edit-vehicle" style="min-height:120px;"></textarea>
+
+    <div class="modal-label" style="margin-top:10px;">🎂 Birthday template</div>
+    <textarea class="modal-textarea" id="edit-birthday" style="min-height:120px;"></textarea>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="modal-btn ghost"   onclick="closeTemplateEditor()">Cancel</button>
+      <button class="modal-btn ghost"   onclick="resetTemplateDefaults()">↩ Reset to defaults</button>
+      <button class="modal-btn primary" onclick="saveTemplates()">💾 Save</button>
+    </div>
+    <div class="modal-success" id="editSuccess">✓ Templates saved</div>
+    <div class="modal-error"   id="editError">⚠ Could not save — try again</div>
+  </div>
+</div>
+
 <script>
 // ══ MODAL STATE ══════════════════════════════════════
 let _modalContact  = null;   // full contact object from daily8
@@ -1378,6 +1406,80 @@ function applyTemplateChoice() {
   const key = document.getElementById('msgTemplatePicker').value;
   document.getElementById('msgTemplate').value = _modalTemplates[key] || '';
 }
+
+// ══ TEMPLATE EDITOR ══════════════════════════════════
+let _templateDefaults = null;  // raw default templates from server
+
+function openTemplateEditor(ev) {
+  if (ev) ev.preventDefault();
+  ['editSuccess','editError'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('edit-relationship').value = 'Loading…';
+  document.getElementById('edit-vehicle').value = 'Loading…';
+  document.getElementById('edit-birthday').value = 'Loading…';
+  document.getElementById('templateEditorModal').classList.add('open');
+  fetch('/templates')
+    .then(r => r.json())
+    .then(d => {
+      _templateDefaults = d.defaults || null;
+      const t = d.templates || {};
+      document.getElementById('edit-relationship').value = t.relationship || '';
+      document.getElementById('edit-vehicle').value = t.vehicle || '';
+      document.getElementById('edit-birthday').value = t.birthday || '';
+    })
+    .catch(() => {
+      document.getElementById('editError').textContent = '⚠ Could not load templates';
+      document.getElementById('editError').style.display = 'block';
+    });
+}
+
+function closeTemplateEditor() {
+  document.getElementById('templateEditorModal').classList.remove('open');
+}
+
+function resetTemplateDefaults() {
+  if (!_templateDefaults) return;
+  document.getElementById('edit-relationship').value = _templateDefaults.relationship || '';
+  document.getElementById('edit-vehicle').value = _templateDefaults.vehicle || '';
+  document.getElementById('edit-birthday').value = _templateDefaults.birthday || '';
+}
+
+async function saveTemplates() {
+  const payload = {
+    relationship: document.getElementById('edit-relationship').value,
+    vehicle:      document.getElementById('edit-vehicle').value,
+    birthday:     document.getElementById('edit-birthday').value,
+  };
+  const okEl = document.getElementById('editSuccess');
+  const errEl = document.getElementById('editError');
+  okEl.style.display = errEl.style.display = 'none';
+  try {
+    const r = await fetch('/save-templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      okEl.style.display = 'block';
+      // Refresh the open contact modal's templates so the change shows immediately
+      if (_modalContact) {
+        _modalTemplates = null;
+      }
+      setTimeout(closeTemplateEditor, 1400);
+    } else {
+      errEl.textContent = '⚠ Could not save — try again';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = '⚠ Could not save — try again';
+    errEl.style.display = 'block';
+  }
+}
+
+// Close editor on overlay click
+document.getElementById('templateEditorModal').addEventListener('click', function(e) {
+  if (e.target === this) closeTemplateEditor();
+});
 
 function openModal(contact) {
   _modalContact = contact;

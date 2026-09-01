@@ -269,7 +269,7 @@ async function fetchDailyContacts() {
 }
 
 // ── POST to Supabase ─────────────────────────────────
-function postSupabase(path, body, method) {
+function postSupabase(path, body, method, extraHeaders) {
   return new Promise((resolve, reject) => {
     const data   = JSON.stringify(body);
     const m      = (method || 'POST').toUpperCase();
@@ -277,13 +277,13 @@ function postSupabase(path, body, method) {
       hostname: 'xpfwfdfivehigppdmhnx.supabase.co',
       path:     '/rest/v1' + path,
       method:   m,
-      headers:  {
+      headers:  Object.assign({
         'apikey':         SUPABASE_KEY,
         'Authorization':  'Bearer ' + SUPABASE_KEY,
         'Content-Type':   'application/json',
         'Content-Length': Buffer.byteLength(data),
         'Prefer':         'return=representation',
-      },
+      }, extraHeaders || {}),
     };
     const req = https.request(opts, r => {
       let d = ''; r.on('data', c => d += c);
@@ -296,48 +296,67 @@ function postSupabase(path, body, method) {
   });
 }
 
-// ── Message template generator ───────────────────────
-// Returns three named WhatsApp templates Grant can choose from:
-//   birthday     — warm birthday greeting
-//   vehicle      — cold re-engagement that references their car
-//   relationship — pure connection, no vehicle, no sell (default)
-function buildTemplates(c, vehicle) {
+// ── Message templates ────────────────────────────────
+// Three named WhatsApp templates Grant can edit from the dashboard.
+// Custom versions are stored in Supabase (dashboard_settings, key='message_templates')
+// with {name} and {car} placeholders. If none stored, these defaults are used.
+const DEFAULT_TEMPLATES = {
+  birthday:
+    `Hi {name}, \n\n` +
+    `Just wanted to wish you a very happy birthday today, I hope it's a great one, spent with the people who matter most to you.\n\n` +
+    `It's been too long since we caught up. Would love to hear how you've been?\n\n` +
+    `Best wishes,\nGrant`,
+  vehicle:
+    `Hi {name}, \n\n` +
+    `You crossed my mind today and I realised it's been far too long since we last spoke. I was thinking about the {car} and wondered how you've been getting on with it.\n\n` +
+    `No agenda at all — would genuinely love to catch up when you have a moment.\n\n` +
+    `Grant`,
+  relationship:
+    `Hi {name}, \n\n` +
+    `You came to mind today and I realised it's been far too long since we properly caught up. I hope you and the family are keeping well.\n\n` +
+    `No reason other than that, I value the relationship we've built over the years and just wanted to reconnect. Would love to hear how you've been? \n\n` +
+    `Best regards,\nGrant`,
+};
+
+// Cache stored templates for 60s so every daily-8 click doesn't hit Supabase
+let templatesCache = { data: null, fetched: 0 };
+
+async function fetchStoredTemplates() {
+  const now = Date.now();
+  if (templatesCache.data && now - templatesCache.fetched < 60 * 1000) return templatesCache.data;
+  let stored = {};
+  try {
+    const r = await fetchSupabase(`/dashboard_settings?select=value&key=eq.message_templates&limit=1`);
+    if (Array.isArray(r.json) && r.json.length && r.json[0].value) stored = r.json[0].value;
+  } catch (e) { /* table may not exist yet — fall back to defaults */ }
+  const merged = {
+    birthday:     (stored.birthday     || DEFAULT_TEMPLATES.birthday),
+    vehicle:      (stored.vehicle      || DEFAULT_TEMPLATES.vehicle),
+    relationship: (stored.relationship || DEFAULT_TEMPLATES.relationship),
+  };
+  templatesCache = { data: merged, fetched: now };
+  return merged;
+}
+
+// Fill {name} / {car} placeholders for a specific contact
+function fillTemplate(text, first, car) {
+  return String(text || '')
+    .replace(/\{name\}/g, first)
+    .replace(/\{car\}/g, car || 'car');
+}
+
+// Build the three personalised templates for a contact (async — reads stored versions)
+async function buildTemplates(c, vehicle) {
   const first = c.first_name || (c.name ? c.name.split(' ')[0] : '') || 'there';
   const brand = vehicle ? vehicle.brand : null;
   const model = vehicle ? vehicle.model : null;
   const car   = brand && model ? `${brand} ${model}` : brand || model || null;
-
-  // 1. Birthday — warm, personal, no agenda
-  const birthday =
-    `Hi ${first}, \n\n` +
-    `Just wanted to wish you a very happy birthday today, I hope it's a great one, spent with the people who matter most to you.\n\n` +
-    `It's been too long since we caught up. Would love to hear how you've been?\n\n` +
-    `Best wishes,\nGrant`;
-
-  // 2. Cold vehicle — reconnect with a natural reference to their car
-  const vehicleMsg =
-    `Hi ${first}, \n\n` +
-    (car
-      ? `You crossed my mind today and I realised it's been far too long since we last spoke. I was thinking about the ${car} and wondered how you've been getting on with it.\n\n`
-      : `You crossed my mind today and I realised it's been far too long since we last spoke. I was wondering how you've been getting on with the car.\n\n`) +
-    `No agenda at all — would genuinely love to catch up when you have a moment.\n\n` +
-    `Grant`;
-
-  // 3. Relationship — pure connection, no vehicle, no sell
-  const relationship =
-    `Hi ${first}, \n\n` +
-    `You came to mind today and I realised it's been far too long since we properly caught up. I hope you and the family are keeping well.\n\n` +
-    `No reason other than that, I value the relationship we've built over the years and just wanted to reconnect. Would love to hear how you've been? \n\n` +
-    `Best regards,\nGrant`;
-
-  return { birthday, vehicle: vehicleMsg, relationship };
-}
-
-// Backward-compatible single-string helper — picks a sensible default
-function buildTemplate(c, vehicle) {
-  const t = buildTemplates(c, vehicle);
-  const isBday = (c.badges || []).some(b => b.includes('Birthday'));
-  return isBday ? t.birthday : t.relationship;
+  const raw   = await fetchStoredTemplates();
+  return {
+    birthday:     fillTemplate(raw.birthday, first, car),
+    vehicle:      fillTemplate(raw.vehicle, first, car),
+    relationship: fillTemplate(raw.relationship, first, car),
+  };
 }
 
 // ── Read body from POST request ───────────────────────
@@ -397,7 +416,7 @@ const server = http.createServer(async (req, res) => {
         const vr = await fetchSupabase(`/vehicle_status?select=brand,model&owner_id=eq.${contact.id}&limit=1`);
         vehicle  = Array.isArray(vr.json) && vr.json.length ? vr.json[0] : null;
       }
-      const templates = buildTemplates(contact, vehicle);
+      const templates = await buildTemplates(contact, vehicle);
       const isBday    = (contact.badges || []).some(b => b.includes('Birthday'));
       const defaultKey = isBday ? 'birthday' : 'relationship';
       const template  = templates[defaultKey];
@@ -405,6 +424,46 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ template, templates, defaultKey, vehicle }));
     } catch(e) {
       res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // ── /templates  (GET) — raw stored templates for the editor panel ──
+  if (parsed.pathname === '/templates' && req.method === 'GET') {
+    try {
+      const raw = await fetchStoredTemplates();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ templates: raw, defaults: DEFAULT_TEMPLATES }));
+    } catch(e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ templates: DEFAULT_TEMPLATES, defaults: DEFAULT_TEMPLATES }));
+    }
+    return;
+  }
+
+  // ── /save-templates  (POST {birthday, vehicle, relationship}) — persist edits ──
+  if (parsed.pathname === '/save-templates' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const value = {
+        birthday:     body.birthday     || DEFAULT_TEMPLATES.birthday,
+        vehicle:      body.vehicle      || DEFAULT_TEMPLATES.vehicle,
+        relationship: body.relationship || DEFAULT_TEMPLATES.relationship,
+      };
+      // Upsert into dashboard_settings (key = message_templates)
+      const r = await postSupabase(
+        '/dashboard_settings?on_conflict=key',
+        { key: 'message_templates', value, updated_at: new Date().toISOString() },
+        'POST',
+        { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+      );
+      // Bust the cache so the next message-template read picks up the change
+      templatesCache = { data: null, fetched: 0 };
+      const ok = r.status < 300;
+      res.writeHead(ok ? 200 : 500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok, status: r.status, body: ok ? undefined : r.body }));
+    } catch(e) {
+      res.writeHead(500); res.end(JSON.stringify({ ok: false, error: e.message }));
     }
     return;
   }
