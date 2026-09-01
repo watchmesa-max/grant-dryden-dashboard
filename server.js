@@ -309,14 +309,14 @@ function buildTemplates(c, vehicle) {
 
   // 1. Birthday — warm, personal, no agenda
   const birthday =
-    `Hi ${first}, Grant here 👋\n\n` +
-    `Just wanted to wish you a very happy birthday today — I hope it's a wonderful one, spent with the people who matter most to you.\n\n` +
-    `It's been too long since we caught up. Would love to hear how you've been.\n\n` +
-    `Warmest wishes,\nGrant`;
+    `Hi ${first}, \n\n` +
+    `Just wanted to wish you a very happy birthday today, I hope it's a great one, spent with the people who matter most to you.\n\n` +
+    `It's been too long since we caught up. Would love to hear how you've been?\n\n` +
+    `Best wishes,\nGrant`;
 
   // 2. Cold vehicle — reconnect with a natural reference to their car
   const vehicleMsg =
-    `Hi ${first}, Grant here 👋\n\n` +
+    `Hi ${first}, \n\n` +
     (car
       ? `You crossed my mind today and I realised it's been far too long since we last spoke. I was thinking about the ${car} and wondered how you've been getting on with it.\n\n`
       : `You crossed my mind today and I realised it's been far too long since we last spoke. I was wondering how you've been getting on with the car.\n\n`) +
@@ -325,10 +325,10 @@ function buildTemplates(c, vehicle) {
 
   // 3. Relationship — pure connection, no vehicle, no sell
   const relationship =
-    `Hi ${first}, Grant here 👋\n\n` +
+    `Hi ${first}, \n\n` +
     `You came to mind today and I realised it's been far too long since we properly caught up. I hope you and the family are keeping well.\n\n` +
-    `No reason other than that — I value the relationship we've built over the years and just wanted to reconnect. Would love to hear how you've been.\n\n` +
-    `Warm regards,\nGrant`;
+    `No reason other than that, I value the relationship we've built over the years and just wanted to reconnect. Would love to hear how you've been? \n\n` +
+    `Best regards,\nGrant`;
 
   return { birthday, vehicle: vehicleMsg, relationship };
 }
