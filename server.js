@@ -297,35 +297,47 @@ function postSupabase(path, body, method) {
 }
 
 // ── Message template generator ───────────────────────
+// Returns three named WhatsApp templates Grant can choose from:
+//   birthday     — warm birthday greeting
+//   vehicle      — cold re-engagement that references their car
+//   relationship — pure connection, no vehicle, no sell (default)
+function buildTemplates(c, vehicle) {
+  const first = c.first_name || (c.name ? c.name.split(' ')[0] : '') || 'there';
+  const brand = vehicle ? vehicle.brand : null;
+  const model = vehicle ? vehicle.model : null;
+  const car   = brand && model ? `${brand} ${model}` : brand || model || null;
+
+  // 1. Birthday — warm, personal, no agenda
+  const birthday =
+    `Hi ${first}, Grant here 👋\n\n` +
+    `Just wanted to wish you a very happy birthday today — I hope it's a wonderful one, spent with the people who matter most to you.\n\n` +
+    `It's been too long since we caught up. Would love to hear how you've been.\n\n` +
+    `Warmest wishes,\nGrant`;
+
+  // 2. Cold vehicle — reconnect with a natural reference to their car
+  const vehicleMsg =
+    `Hi ${first}, Grant here 👋\n\n` +
+    (car
+      ? `You crossed my mind today and I realised it's been far too long since we last spoke. I was thinking about the ${car} and wondered how you've been getting on with it.\n\n`
+      : `You crossed my mind today and I realised it's been far too long since we last spoke. I was wondering how you've been getting on with the car.\n\n`) +
+    `No agenda at all — would genuinely love to catch up when you have a moment.\n\n` +
+    `Grant`;
+
+  // 3. Relationship — pure connection, no vehicle, no sell
+  const relationship =
+    `Hi ${first}, Grant here 👋\n\n` +
+    `You came to mind today and I realised it's been far too long since we properly caught up. I hope you and the family are keeping well.\n\n` +
+    `No reason other than that — I value the relationship we've built over the years and just wanted to reconnect. Would love to hear how you've been.\n\n` +
+    `Warm regards,\nGrant`;
+
+  return { birthday, vehicle: vehicleMsg, relationship };
+}
+
+// Backward-compatible single-string helper — picks a sensible default
 function buildTemplate(c, vehicle) {
-  const first   = c.first_name || c.name.split(' ')[0] || 'there';
-  const isBday  = (c.badges || []).some(b => b.includes('Birthday'));
-  const pipeline = c.pipeline || '';
-  const brand    = vehicle ? vehicle.brand : null;
-  const model    = vehicle ? vehicle.model : null;
-  const car      = brand && model ? `${brand} ${model}` : brand || model || null;
-
-  let opening = '';
-  let body    = '';
-
-  if (isBday) {
-    opening = `Hi ${first}, Grant here 👋`;
-    body    = car
-      ? `It's been far too long since we last spoke and you crossed my mind today. I was thinking about the ${car} and wondered how you've been getting on with it. Everything running as it should?\n\nWould genuinely love to catch up — no agenda, just keen to reconnect.`
-      : `It's been far too long since we last spoke and you crossed my mind today. I hope you and the family are keeping well.\n\nWould genuinely love to catch up when you have a moment — no agenda, just keen to reconnect.`;
-  } else if (pipeline === 'Owner') {
-    opening = `Good morning ${first},\n\nI hope you are well. I wanted to reach out personally to check in and hear how you are finding the ${car || 'your vehicle'}.`;
-    body    = car
-      ? `These are vehicles built to be experienced and I would love to know that yours is living up to every expectation. Please do not hesitate to reach out anytime.`
-      : `It would be great to reconnect. Please do not hesitate to reach out anytime.`;
-  } else {
-    opening = `Good morning ${first},\n\nI hope this message finds you well. I was thinking of you recently and wanted to reach out personally.`;
-    body    = `I always value the relationships I have built over the years and yours is one I hold in high regard. If there is ever anything I can assist with, please do not hesitate to get in touch.`;
-  }
-
-  const closing = isBday ? `\n\nGrant` : `\n\nBest regards,\nGrant`;
-
-  return `${opening}\n\n${body}${closing}`;
+  const t = buildTemplates(c, vehicle);
+  const isBday = (c.badges || []).some(b => b.includes('Birthday'));
+  return isBday ? t.birthday : t.relationship;
 }
 
 // ── Read body from POST request ───────────────────────
@@ -385,9 +397,12 @@ const server = http.createServer(async (req, res) => {
         const vr = await fetchSupabase(`/vehicle_status?select=brand,model&owner_id=eq.${contact.id}&limit=1`);
         vehicle  = Array.isArray(vr.json) && vr.json.length ? vr.json[0] : null;
       }
-      const template = buildTemplate(contact, vehicle);
+      const templates = buildTemplates(contact, vehicle);
+      const isBday    = (contact.badges || []).some(b => b.includes('Birthday'));
+      const defaultKey = isBday ? 'birthday' : 'relationship';
+      const template  = templates[defaultKey];
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ template, vehicle }));
+      res.end(JSON.stringify({ template, templates, defaultKey, vehicle }));
     } catch(e) {
       res.writeHead(500); res.end(JSON.stringify({ error: e.message }));
     }

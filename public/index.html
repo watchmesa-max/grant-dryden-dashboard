@@ -1303,6 +1303,12 @@ setInterval(() => { fetchWeather(); updateLastUpdated(); }, 600000); // refresh 
 
     <!-- TAB 1: Message Template + WhatsApp -->
     <div class="modal-panel active" id="tab-message">
+      <div class="modal-label">Template</div>
+      <select class="modal-input" id="msgTemplatePicker" onchange="applyTemplateChoice()" style="margin-bottom:10px;">
+        <option value="relationship">🤝 Relationship — reconnect, no sell</option>
+        <option value="vehicle">🚗 Cold vehicle — reference their car</option>
+        <option value="birthday">🎂 Birthday — warm greeting</option>
+      </select>
       <div class="modal-label">Personalised Opener</div>
       <textarea class="modal-textarea" id="msgTemplate" placeholder="Loading template…"></textarea>
       <div id="msgVehicle" style="font-size:11px;color:var(--text-tertiary);margin-top:4px;"></div>
@@ -1364,6 +1370,14 @@ setInterval(() => { fetchWeather(); updateLastUpdated(); }, 600000); // refresh 
 // ══ MODAL STATE ══════════════════════════════════════
 let _modalContact  = null;   // full contact object from daily8
 let _connectTarget = null;   // {id, name, email, entity_id}
+let _modalTemplates = null;  // {relationship, vehicle, birthday}
+
+// Swap the textarea when Grant picks a different template
+function applyTemplateChoice() {
+  if (!_modalTemplates) return;
+  const key = document.getElementById('msgTemplatePicker').value;
+  document.getElementById('msgTemplate').value = _modalTemplates[key] || '';
+}
 
 function openModal(contact) {
   _modalContact = contact;
@@ -1405,14 +1419,17 @@ function openModal(contact) {
   })
   .then(r => r.json())
   .then(d => {
-    document.getElementById('msgTemplate').value = d.template || '';
+    _modalTemplates = d.templates || { relationship: d.template || '', vehicle: d.template || '', birthday: d.template || '' };
+    const picker = document.getElementById('msgTemplatePicker');
+    picker.value = d.defaultKey || 'relationship';
+    document.getElementById('msgTemplate').value = _modalTemplates[picker.value] || d.template || '';
     if (d.vehicle) {
       document.getElementById('msgVehicle').textContent =
         '🚗 ' + (d.vehicle.brand || '') + ' ' + (d.vehicle.model || '');
     }
   })
   .catch(() => {
-    document.getElementById('msgTemplate').value = 'Good morning ' + contact.name.split(' ')[0] + ',\n\nI hope this message finds you well. I wanted to reach out personally to reconnect.\n\nPlease do not hesitate to get in touch anytime.\n\nBest regards,\nGrant';
+    document.getElementById('msgTemplate').value = 'Hi ' + contact.name.split(' ')[0] + ', Grant here 👋\n\nYou came to mind today and I realised it\'s been far too long since we caught up. I hope you and the family are keeping well.\n\nNo reason other than that — I value the relationship we\'ve built and just wanted to reconnect.\n\nWarm regards,\nGrant';
   });
 }
 
