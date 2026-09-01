@@ -309,10 +309,10 @@ function buildTemplate(c, vehicle) {
   let body    = '';
 
   if (isBday) {
-    opening = `Good morning ${first},\n\nWishing you a very happy birthday today. I hope this is the start of a truly wonderful year ahead.`;
+    opening = `Hi ${first}, Grant here 👋`;
     body    = car
-      ? `I imagine the ${car} is the perfect companion for a day like today. Enjoy every moment of it.`
-      : `I hope you spend the day surrounded by the people who matter most to you.`;
+      ? `It's been far too long since we last spoke and you crossed my mind today. I was thinking about the ${car} and wondered how you've been getting on with it. Everything running as it should?\n\nWould genuinely love to catch up — no agenda, just keen to reconnect.`
+      : `It's been far too long since we last spoke and you crossed my mind today. I hope you and the family are keeping well.\n\nWould genuinely love to catch up when you have a moment — no agenda, just keen to reconnect.`;
   } else if (pipeline === 'Owner') {
     opening = `Good morning ${first},\n\nI hope you are well. I wanted to reach out personally to check in and hear how you are finding the ${car || 'your vehicle'}.`;
     body    = car
@@ -323,7 +323,7 @@ function buildTemplate(c, vehicle) {
     body    = `I always value the relationships I have built over the years and yours is one I hold in high regard. If there is ever anything I can assist with, please do not hesitate to get in touch.`;
   }
 
-  const closing = `\n\nBest regards,\nGrant`;
+  const closing = isBday ? `\n\nGrant` : `\n\nBest regards,\nGrant`;
 
   return `${opening}\n\n${body}${closing}`;
 }
